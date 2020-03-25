@@ -1,0 +1,31 @@
+<html>
+<header>
+
+</header>
+
+<body>
+
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId            : '508952156715998',
+      autoLogAppEvents : true,
+      xfbml            : true,
+      version          : 'v6.0'
+    });
+    FB.ui({
+  method: 'send',
+  link: 'http://www.nytimes.com/interactive/2015/04/15/travel/europe-favorite-streets.html',
+});
+  };
+  document.ready(function () {FB.ui({
+  method: 'send',
+  link: 'http://www.nytimes.com/interactive/2015/04/15/travel/europe-favorite-streets.html',
+});
+});
+  
+</script>
+<script async defer src="https://connect.facebook.net/en_US/sdk.js"></script>
+
+</body>
+</html>
