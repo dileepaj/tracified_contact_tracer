@@ -217,6 +217,9 @@ module.exports = class Receive {
         ])
       ];
     } else if (payload.includes("TOKEN")) {
+      // TODO Tracified code can be added here. Ideally we do not need to use the Survey module we can implement a new module for TracifiedSurvery
+      // however no restriction as such the developer can take a decision based on her/his discretion
+      // At this point we need to identify the user type and create the required flows. @Dilmi will focus on the normal user flow.
       response = Survey.handlePayload(payload);
     }
     else {
