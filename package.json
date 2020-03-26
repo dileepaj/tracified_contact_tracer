@@ -5,6 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
+    "start:watch": "nodemon app.js",
     "lint": "./node_modules/.bin/eslint ."
   },
   "dependencies": {
