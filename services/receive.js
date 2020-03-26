@@ -216,7 +216,10 @@ module.exports = class Receive {
           }
         ])
       ];
-    } else {
+    } else if (payload.includes("TOKEN")) {
+      response = Survey.handlePayload(payload);
+    }
+    else {
       response = {
         text: `This is a default postback message for payload: ${payload}!`
       };
