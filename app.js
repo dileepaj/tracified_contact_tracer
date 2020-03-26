@@ -70,6 +70,7 @@ app.get("/webhook", (req, res) => {
 app.post("/webhook", (req, res) => {
   let body = req.body;
 
+  // console.log(body)
   // Checks if this is an event from a page subscription
   if (body.object === "page") {
     // Returns a '200 OK' response to all requests
@@ -77,6 +78,10 @@ app.post("/webhook", (req, res) => {
 
     // Iterates over each entry - there may be multiple if batched
     body.entry.forEach(function(entry) {
+      // console.log(entry)
+      // console.log(entry.messaging)
+      // console.log()
+      // console.log()
       if ("changes" in entry) {
         // Handle Page Changes event
         let receiveMessage = new Receive();
@@ -115,6 +120,15 @@ app.post("/webhook", (req, res) => {
       if ("delivery" in webhookEvent) {
         // console.log("Got a delivery event");
         return;
+      }
+
+      if ("referral" in webhookEvent) {
+        console.log("Got a referral event");
+        let senderPsid = webhookEvent.sender.id;
+        let user = new User(senderPsid);
+        users[senderPsid] = user;
+        let receiveMessage = new Receive(users[senderPsid], webhookEvent);
+        return receiveMessage.handleMessage();
       }
 
       // Get the sender PSID
