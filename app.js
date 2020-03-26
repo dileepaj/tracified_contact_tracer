@@ -45,6 +45,11 @@ app.get("/", function(_req, res) {
   res.render("index");
 });
 
+// For facebook webview for admins
+app.get("/share", function(_req, res) {
+  res.render("share");
+});
+
 // Adds support for GET requests to our webhook
 app.get("/webhook", (req, res) => {
   // Parse the query params
