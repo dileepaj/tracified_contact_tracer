@@ -217,10 +217,34 @@ module.exports = class Receive {
         ])
       ];
     } else if (payload.includes("TOKEN")) {
+      // TODO add logic to verify token. If token is valid then show below message if not show nothing.
+      // What if token expires?? Need to create a login page which will enable to come to this location with the required credentials
+      console.log("got a token request");
+      response = {
+        attachment: {
+          type: "template",
+          payload: {
+            template_type: "button",
+            text: "Register for Tracified Contact Tracer! Click on the button below and share the page with your employees! 🔗🔗 Or simple copy this link and share it " + process.env.APP_URL + "share?ref=" + "TENANTID-asda",
+            buttons: [
+              {
+                type: "web_url",
+                url: process.env.APP_URL + "share?ref=" + "TENANTID-asda",
+                title: "Tracified Contact Tracer",
+                webview_height_ratio: "tall"
+              }
+            ]
+          }
+        }
+      }
+    } else if (payload.includes("TENANTID")) {
       // TODO Tracified code can be added here. Ideally we do not need to use the Survey module we can implement a new module for TracifiedSurvery
       // however no restriction as such the developer can take a decision based on her/his discretion
       // At this point we need to identify the user type and create the required flows. @Dilmi will focus on the normal user flow.
-      response = Survey.handlePayload(payload);
+      console.log("got a tenant request")
+      response = {
+        text: `Hi ` + this.user.firstName + `! Welcome to Tracified Contact Tracer. We will now ask you a some questions. Please answer honestly to ensure the safety of yourself and everyone around you.`
+      };
     }
     else {
       response = {
