@@ -220,23 +220,30 @@ module.exports = class Receive {
       // TODO add logic to verify token. If token is valid then show below message if not show nothing.
       // What if token expires?? Need to create a login page which will enable to come to this location with the required credentials
       console.log("got a token request");
-      response = {
-        attachment: {
-          type: "template",
-          payload: {
-            template_type: "button",
-            text: "Register for Tracified Contact Tracer! Click on the button below and share the page with your employees! 🔗🔗 Or simple copy this link and share it " + process.env.APP_URL + "share?ref=" + "TENANTID-asda",
-            buttons: [
-              {
-                type: "web_url",
-                url: process.env.APP_URL + "share?ref=" + "TENANTID-asda",
-                title: "Tracified Contact Tracer",
-                webview_height_ratio: "tall"
-              }
-            ]
-          }
-        }
-      }
+      // response = [{
+      //   attachment: {
+      //     type: "template",
+      //     payload: {
+      //       template_type: "button",
+      //       text: "Register for Tracified Contact Tracer! Click on the button below and share the page with your employees! 🔗🔗 Or simple copy this link and share it https://m.me/101757184804637?ref=TENANTID-asda",
+      //       buttons: [
+      //         {
+      //           type: "web_url",
+      //           url: "https://m.me/101757184804637?ref=TENANTID-asda",
+      //           title: "Tracified Contact Tracer",
+      //           webview_height_ratio: "tall"
+      //         }
+      //       ]
+      //     }
+      //   }
+      // }];
+      response = [];
+      response.push({
+        text: this.user.firstName + ` You can simply forward the message that follows to your employees.`
+      });
+      response.push({
+        text: `Hi! The company has partnered with Tracified Contact Tracer to help fight against the COVID-19 virus. Please follow this link and do the needful https://m.me/101757184804637?ref=TENANTID-asda. The company look forwards to your full co-operation. Thank you.`,
+      });
     } else if (payload.includes("TENANTID")) {
       // TODO Tracified code can be added here. Ideally we do not need to use the Survey module we can implement a new module for TracifiedSurvery
       // however no restriction as such the developer can take a decision based on her/his discretion
