@@ -242,9 +242,13 @@ module.exports = class Receive {
       // however no restriction as such the developer can take a decision based on her/his discretion
       // At this point we need to identify the user type and create the required flows. @Dilmi will focus on the normal user flow.
       console.log("got a tenant request")
-      response = {
-        text: `Hi ` + this.user.firstName + `! Welcome to Tracified Contact Tracer. We will now ask you a some questions. Please answer honestly to ensure the safety of yourself and everyone around you.`
-      };
+      response = [];
+      response.push({
+        text: `Hi ` + this.user.firstName + `!`
+      });
+      response.push({
+        text: `Welcome to Tracified Contact Tracer. We will now ask you a some questions. Please answer honestly to ensure the safety of yourself and everyone around you.`
+      });
     }
     else {
       response = {
