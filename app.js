@@ -22,6 +22,7 @@ const express = require("express"),
   i18n = require("./i18n.config"),
   app = express();
 
+const mongoose = require('mongoose');
 var users = {};
 
 // Parse application/x-www-form-urlencoded
@@ -49,6 +50,45 @@ app.get("/", function(_req, res) {
 app.get("/share", function(_req, res) {
   res.render("share");
 });
+
+
+/**
+ * MongoDB Connection
+ */
+mongoose.connection.on("connected", () => {
+  console.log("DB Connection Established");
+});
+
+mongoose.connection.on("reconnected", () => {
+  console.log("DB Connection Reestablished");
+});
+
+mongoose.connection.on("disconnected", () => {
+  console.log("DB Connection Disconnected");
+});
+
+mongoose.connection.on("close", () => {
+  console.log("DB Connection Closed");
+});
+
+mongoose.connection.on("error", (error) => {
+  console.log("ERROR: " + error);
+});
+
+mongoose.set("useNewUrlParser", true);
+mongoose.set("useCreateIndex", true);
+mongoose.set("useUnifiedTopology", true);
+
+mongoose.connect(process.env.MONGOLAB_URI).then(() => {
+  console.log("successfully conected to mongoDB");
+  // BasicUser.create({
+  //   PSID:"asdasd",
+  // })
+}).catch((err) => {
+  console.log(err.message);
+});
+
+(mongoose).Promise = global.Promise; // Use global promises for mongoose
 
 // Adds support for GET requests to our webhook
 app.get("/webhook", (req, res) => {
