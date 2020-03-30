@@ -15,6 +15,8 @@ const Curation = require("./curation"),
   Response = require("./response"),
   Care = require("./care"),
   Survey = require("./survey"),
+  Question = require("./question"),
+  Rating = require("./rating"),
   GraphAPi = require("./graph-api"),
   i18n = require("../i18n.config");
 
@@ -28,7 +30,6 @@ module.exports = class Receive {
   // call the appropriate handler function
   handleMessage() {
     let event = this.webhookEvent;
-
     let responses;
 
     try {
@@ -85,13 +86,6 @@ module.exports = class Receive {
       message.includes("start over")
     ) {
       response = Response.genNuxMessage(this.user);
-    } else if (Number(message)) {
-      response = Order.handlePayload("ORDER_NUMBER");
-    } else if (message.includes("#")) {
-      response = Survey.handlePayload("CSAT_SUGGESTION");
-    } else if (message.includes(i18n.__("care.help").toLowerCase())) {
-      let care = new Care(this.user, this.webhookEvent);
-      response = care.handlePayload("CARE_HELP");
     } else {
       response = [
         Response.genText(
@@ -187,38 +181,30 @@ module.exports = class Receive {
       payload === "GITHUB"
     ) {
       response = Response.genNuxMessage(this.user);
-    } else if (payload.includes("CURATION") || payload.includes("COUPON")) {
-      let curation = new Curation(this.user, this.webhookEvent);
-      response = curation.handlePayload(payload);
-    } else if (payload.includes("CARE")) {
-      let care = new Care(this.user, this.webhookEvent);
-      response = care.handlePayload(payload);
-    } else if (payload.includes("ORDER")) {
-      response = Order.handlePayload(payload);
-    } else if (payload.includes("CSAT")) {
-      response = Survey.handlePayload(payload);
-    } else if (payload.includes("CHAT-PLUGIN")) {
-      response = [
-        Response.genText(i18n.__("chat_plugin.prompt")),
-        Response.genText(i18n.__("get_started.guidance")),
-        Response.genQuickReply(i18n.__("get_started.help"), [
-          {
-            title: i18n.__("care.order"),
-            payload: "CARE_ORDER"
-          },
-          {
-            title: i18n.__("care.billing"),
-            payload: "CARE_BILLING"
-          },
-          {
-            title: i18n.__("care.other"),
-            payload: "CARE_OTHER"
-          }
-        ])
-      ];
+    } else if (payload.includes("RATING")) {
+      response = Rating.handlePayload(payload);
+    } else if (payload.includes("QUESTION")) {
+      response = Question.handlePayload(payload);      
+    } else if (payload.includes("END")) {
+      response = [];
+      response.push({
+        text: `Thank you for completing the survey. If you wish to redo the survey, please type "start over" in text box below`
+      });
     } else if (payload.includes("TOKEN")) {
-      // TODO add logic to verify token. If token is valid then show below message if not show nothing.
-      // What if token expires?? Need to create a login page which will enable to come to this location with the required credentials
+      const extractedToken = payload.split('-')[1]; 
+      if(extractedToken) {
+        response = [];
+        response.push({
+          text: this.user.firstName + ` You can simply forward the message that follows to your employees.`
+        });
+        response.push({
+          text: `Hi! The company has partnered with Tracified Contact Tracer to help fight against the COVID-19 virus. Please follow this link and do the needful https://m.me/101757184804637?ref=TENANTID-asda. The company look forwards to your full co-operation. Thank you.`,
+        });
+      } else {
+        response.push({
+          text: `Unauthorised User`,
+        });
+      }
       console.log("got a token request");
       // response = [{
       //   attachment: {
@@ -237,24 +223,19 @@ module.exports = class Receive {
       //     }
       //   }
       // }];
-      response = [];
-      response.push({
-        text: this.user.firstName + ` You can simply forward the message that follows to your employees.`
-      });
-      response.push({
-        text: `Hi! The company has partnered with Tracified Contact Tracer to help fight against the COVID-19 virus. Please follow this link and do the needful https://m.me/101757184804637?ref=TENANTID-asda. The company look forwards to your full co-operation. Thank you.`,
-      });
+      
     } else if (payload.includes("TENANTID")) {
-      // TODO Tracified code can be added here. Ideally we do not need to use the Survey module we can implement a new module for TracifiedSurvery
-      // however no restriction as such the developer can take a decision based on her/his discretion
-      // At this point we need to identify the user type and create the required flows. @Dilmi will focus on the normal user flow.
-      console.log("got a tenant request")
+      const tenantID = payload.split('-')[1]; 
+      let batchId = this.webhookEvent.sender.id;      
       response = [];
       response.push({
-        text: `Hi ` + this.user.firstName + `!`
+        text: `Hi ` + this.user.firstName + `!`,
       });
       response.push({
         text: `Welcome to Tracified Contact Tracer. We will now ask you a some questions. Please answer honestly to ensure the safety of yourself and everyone around you.`
+      });
+      response.push({
+        text: `Type "Hi" to get started`
       });
     }
     else {

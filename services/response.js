@@ -125,29 +125,22 @@ module.exports = class Response {
   }
 
   static genNuxMessage(user) {
-    let welcome = this.genText(
-      i18n.__("get_started.welcome", {
-        userFirstName: user.firstName
-      })
-    );
 
-    let guide = this.genText(i18n.__("get_started.guidance"));
-
-    let curation = this.genQuickReply(i18n.__("get_started.help"), [
-      {
-        title: i18n.__("menu.suggestion"),
-        payload: "CURATION"
-      },
-      {
-        title: i18n.__("menu.help"),
-        payload: "CARE_HELP"
-      },
-      {
-        title: "Send to Contacts",
-        payload: "CARE_ORDER"
-      }
-    ]);
-    console.log("response.js ---> genNuxMessage");
-    return [welcome, guide, curation];
-  }
+      let response;
+      response = Response.genQuickReply(i18n.__("What crowded places have you been to since the Covid-19 epidemic outbreak?"), [
+          {
+            title: i18n.__("Public Transport"),
+            payload: "RATING"
+          },
+          {
+            title: i18n.__("Airport"),
+            payload: "RATING"
+          },
+          {
+            title: i18n.__("Big Match"),
+            payload: "RATING"
+          }
+      ]);
+      return response;
+    }
 };
