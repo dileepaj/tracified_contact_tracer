@@ -192,6 +192,7 @@ module.exports = class Receive {
       });
     } else if (payload.includes("TOKEN")) {
       const extractedToken = payload.split('-')[1]; 
+      // TODO Save token in DB along with PSID
       if(extractedToken) {
         response = [];
         response.push({
