@@ -90,6 +90,16 @@ mongoose.connect(process.env.MONGOLAB_URI).then(() => {
 
 (mongoose).Promise = global.Promise; // Use global promises for mongoose
 
+// For admin registration
+app.get("/register", function(_req, res) {
+  res.render("register");
+});
+
+// For admin email validation
+app.get("/confirm", function(_req, res) {
+  res.render("confirm");
+});
+
 // Adds support for GET requests to our webhook
 app.get("/webhook", (req, res) => {
   // Parse the query params
