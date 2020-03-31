@@ -50,9 +50,14 @@ app.get("/share", function(_req, res) {
   res.render("share");
 });
 
-// For facebook webview for admins
+// For admin registration
 app.get("/register", function(_req, res) {
   res.render("register");
+});
+
+// For admin email validation
+app.get("/confirm", function(_req, res) {
+  res.render("confirm");
 });
 
 // Adds support for GET requests to our webhook

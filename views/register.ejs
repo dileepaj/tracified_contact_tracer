@@ -20,47 +20,49 @@
     integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
     crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.min.js"></script>
-  
+
   <script src="js/register.js"></script>
 
-  <title>Document</title>
+  <title>Register</title>
 </head>
 
-<body>
+<body onload="document.registerForm.reset()">
   <div class="page-head">
     <div class="col-md-12 text-center mt-3">
       <img method="GET" class="mb-3" src="t_logo.png" alt="" width="54px" height="54px">
     </div>
-    <h3>Tracified Contact Tracer</h2>
+    <h3>Tracified Contact Tracer</h3>
 
-      <h3 class="pt-3 font-weight-bold">Register</h2>
+      <h3 class="pt-3 font-weight-bold">Register</h3>
   </div>
   <div class="register">
     <form class="register-form" name="registerForm" id="refForm">
 
       <div class="form-group">
-        <label for="empName">Name</label>
-        <input type="text" class="form-control" name="empName" id="inputEmpName" placeholder="John Smith" required>
-
+        <label for="empName">Full Name</label>
+        <input type="text" class="form-control" name="empName" id="inputEmpName" placeholder="John Smith"
+          oninput="revert('inputEmpName')">
+        <small id="inputEmpNameError" class="error-color"></small>
       </div>
 
       <div class="form-group">
         <label for="empEmail">Email address</label>
         <input type="email" class="form-control" name="empEmail" id="inputEmpEmail" placeholder="example@mail.com"
-          required>
-
+          oninput="validateEmailFormat()" onblur="checkMail()">
+        <small id="inputEmpEmailError" class="error-color"></small>
       </div>
 
       <div class="form-group">
         <label for="orgName">Organization</label>
-        <input type="text" class="form-control" name="orgName" id="inputOrgName" placeholder="ABC Inc." required>
-
+        <input type="text" class="form-control" name="orgName" id="inputOrgName" placeholder="ABC Inc."
+          oninput="revert('inputOrgName')">
+        <small id="inputOrgNameError" class="error-color"></small>
       </div>
 
       <div class="form-group">
         <label for="country">Country</label>
-        <select class="form-control" name="selCountry" id="selectCountry" required>
-          <option selected disabled value="">Select Country</option>
+        <select class="form-control" name="selCountry" id="selectCountry" onchange="revert('selectCountry')">
+          <option selected value="">Select Country</option>
           <option value="Afganistan">Afghanistan</option>
           <option value="Albania">Albania</option>
           <option value="Algeria">Algeria</option>
@@ -308,15 +310,39 @@
           <option value="Zambia">Zambia</option>
           <option value="Zimbabwe">Zimbabwe</option>
         </select>
+        <small id="selectCountryError" class="error-color"></small>
       </div>
 
       <div class="form-group">
         <label for="password">Password</label>
-        <input type="password" class="form-control" name="password" id="inputPassword" required>
+        <input type="password" class="form-control" name="password" id="inputPassword"
+          oninput="checkPasswordStrength(), clearErrorMessages('inputPassword')">
+        <small id="inputPasswordError" class="error-color"></small>
+        <small id="inputPasswordStrength"></small>
+
+        <div class="form-check form-check-inline show-pwd pt-1">
+          <input class="form-check-input" type="checkbox" id="showPassword" onclick="showPwd('inputPassword')">
+          <small class="form-check-label" for="showPassword">Show Password</small>
+        </div>
       </div>
 
+      <div class="form-group pb-2">
+        <label for="confirmPassword">Confirm Password</label>
+        <input type="password" class="form-control" name="confirmPassword" id="inputConfirmPassword"
+          oninput="cnfPassword()">
+        <small id="inputConfirmPasswordError" class="error-color"></small>
+        <small id="passwordMatch"></small>
+
+        <div class="form-check form-check-inline show-pwd pt-1">
+          <input class="form-check-input" type="checkbox" id="showConfPassword"
+            onclick="showPwd('inputConfirmPassword')">
+          <small class="form-check-label" for="showConfPassword">Show Password</small>
+        </div>
+      </div>
+
+
       <div class="submit-button pt-2">
-        <button type="button" class="btn btn-md btn-primary btn-block" onclick="submitForm()">Submit</button>
+        <button type="button" class="btn btn-md btn-primary btn-block" onclick="submitRegForm()">Submit</button>
       </div>
 
       <p class="mt-5 mb-3 text-muted text-center">Tracified © 2020</p>
