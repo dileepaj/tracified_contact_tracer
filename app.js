@@ -23,7 +23,7 @@ const express = require("express"),
 	app = express();
 
 const mongoose = require("mongoose");
-const adminSchema = require("./db/adminUserSchema");
+const AdminUser = require("./db/adminUserSchema");
 
 var users = {};
 
@@ -96,10 +96,12 @@ mongoose.Promise = global.Promise; // Use global promises for mongoose
 
 //add admin to db
 app.post("/registerAdmin", (req, res) => {
-	var newAdmin = new adminSchema(req.body);
-
-	newAdmin
-		.save()
+	AdminUser.create({
+		username: req.body.admin.username,
+		password: req.body.admin.password,
+		tenantId: req.body.admin.tenantId,
+		token: req.body.admin.token
+	})
 		.then((data) => {
 			res.status(200).send("Admin added successfully");
 		})

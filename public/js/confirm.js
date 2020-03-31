@@ -12,7 +12,7 @@ var retName = sessionStorage.getItem("name");
 
 //workflow json
 var workflowJson = {
-	revision: 1,
+	revision: 0,
 	workflows: {
 		stages: [
 			{
@@ -75,8 +75,8 @@ var workflowJson = {
 		],
 		name: "",
 		tenantId: "",
-		revision: 1,
-		version: "1"
+		revision: 0,
+		version: "0"
 	}
 };
 
@@ -87,8 +87,6 @@ function submitConfForm() {
 		setConfJson();
 		confirm();
 	}
-
-	// login();
 }
 
 function getConfValues() {
@@ -142,19 +140,20 @@ function sendWorkflowJson(token) {
 	console.log(workflowJson);
 	console.log(JSON.stringify(workflowJson));
 
-	postData(url, workflowJson).then((response) => {
+	postData(url, workflowJson, token).then((response) => {
 		console.log(response);
 	});
 }
 
-async function postData(url, data) {
+async function postData(url, data, token) {
 	const response = await fetch(url, {
 		method: "POST",
 		mode: "cors",
 		cache: "no-cache",
 		credentials: "same-origin",
 		headers: {
-			"Content-Type": "application/json"
+			"Content-Type": "application/json",
+			Authorization: "Bearer " + token
 		},
 		redirect: "follow",
 		referrerPolicy: "no-referrer",
@@ -240,28 +239,21 @@ function redirectToFB() {
 
 function saveAdmin(recToken) {
 	let url = "/registerAdmin";
-	let nameArray = retName.split(" ");
 	let decode = jwt_decode(recToken);
-
-	let fname = nameArray[0],
-		lname = nameArray[nameArray.length - 1],
-		psid = "",
-		tenant = decode.tenantID;
+	let tenant = decode.tenantID;
 
 	let newAdmin = {
-		firstName: fname,
-		lastName: lname,
-		PSID: psid,
-		tenantId: tenant,
-		token: recToken,
-		lastLoggedIn: Date.now(),
-		username: retEmail,
-		password: retPassword
+		admin: {
+			tenantId: tenant,
+			token: recToken,
+			username: retEmail,
+			password: retPassword
+		}
 	};
 
 	postData(url, newAdmin).then((response) => {
 		console.log("add new admin endpoint", response);
 	});
-	console.log("f", fname, "l", lname);
+
 	console.log("new admin", newAdmin);
 }
