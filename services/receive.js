@@ -20,6 +20,7 @@ const Curation = require("./curation"),
   GraphAPi = require("./graph-api"),
   BasicUser = require("../db/userSchema"),
   AdminUser = require("../db/adminUserSchema"),
+  request = require('request'),
   i18n = require("../i18n.config");
   let questionOne
   let questionTwo 
@@ -202,8 +203,7 @@ module.exports = class Receive {
       questionThree = response;     
     } else if (payload.includes("END")) {
       BasicUser.findOne({ PSID: this.webhookEvent.sender.id }).then((res) => {
-        // TODO Retreive the previous question and answers add the new question and answer
-        // TODO add code to send data packet to backend
+        this.backendPost('https://api.tracified.com/api/v2/dataPackets', BasicUser, this.webhookEvent.sender.id);
         console.log("Found previous answers in DB for PSID ", this.webhookEvent.sender.id)
         BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
           lastAnsweredTimestamp: undefined,
@@ -363,4 +363,19 @@ module.exports = class Receive {
   firstEntity(nlp, name) {
     return nlp && nlp.entities && nlp.entities[name] && nlp.entities[name][0];
   }
+
+
+  backendPost(url, payload, token) {
+    return new Promise((resolve, reject) => {
+      request.post(url, payload, {
+        observe: 'response',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'Application/json',
+          'Authorization': 'Bearer ' + token
+        }
+      })
+    });
+  }
+
 };
