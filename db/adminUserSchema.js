@@ -9,6 +9,8 @@ const adminUser = new Schema({
     tenantId: String,
     token: String,
     lastLoggedIn: Date,
+    username: String,
+    password: String
 });
 
 const AdminUserSchema = mongoose.model("AdminUser", adminUser);
