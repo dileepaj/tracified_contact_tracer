@@ -18,7 +18,11 @@ const Curation = require("./curation"),
   Question = require("./question"),
   Rating = require("./rating"),
   GraphAPi = require("./graph-api"),
+  BasicUser = require("../db/userSchema"),
   i18n = require("../i18n.config");
+  let questionOne
+  let questionTwo 
+  let questionThree
 
 module.exports = class Receive {
   constructor(user, webhookEvent) {
@@ -78,7 +82,6 @@ module.exports = class Receive {
     let greeting = this.firstEntity(this.webhookEvent.message.nlp, "greetings");
 
     let message = this.webhookEvent.message.text.trim().toLowerCase();
-
     let response;
 
     if (
@@ -86,29 +89,9 @@ module.exports = class Receive {
       message.includes("start over")
     ) {
       response = Response.genNuxMessage(this.user);
+      questionOne = response;
     } else {
-      response = [
-        Response.genText(
-          i18n.__("fallback.any", {
-            message: this.webhookEvent.message.text
-          })
-        ),
-        Response.genText(i18n.__("get_started.guidance")),
-        Response.genQuickReply(i18n.__("get_started.help"), [
-          {
-            title: i18n.__("menu.suggestion"),
-            payload: "CURATION"
-          },
-          {
-            title: i18n.__("menu.help"),
-            payload: "CARE_HELP"
-          },
-          {
-            title: "Send to Contacts",
-            payload: "CARE_ORDER"
-          }
-        ])
-      ];
+        response = Response.genNuxMessage(this.user);
     }
     console.log("receive.js ---> handleTextMessage");
     return response;
@@ -180,11 +163,16 @@ module.exports = class Receive {
       payload === "DEVDOCS" ||
       payload === "GITHUB"
     ) {
+    //Where questions are being called from
+    //First question starts here
       response = Response.genNuxMessage(this.user);
+      questionOne = response;
     } else if (payload.includes("RATING")) {
       response = Rating.handlePayload(payload);
+      questionTwo = response;
     } else if (payload.includes("QUESTION")) {
-      response = Question.handlePayload(payload);      
+      response = Question.handlePayload(payload);
+      questionThree = response;     
     } else if (payload.includes("END")) {
       response = [];
       response.push({
@@ -192,6 +180,7 @@ module.exports = class Receive {
       });
     } else if (payload.includes("TOKEN")) {
       const extractedToken = payload.split('-')[1]; 
+      // TODO Save token in DB along with PSID
       if(extractedToken) {
         response = [];
         response.push({
@@ -226,16 +215,37 @@ module.exports = class Receive {
       
     } else if (payload.includes("TENANTID")) {
       const tenantID = payload.split('-')[1]; 
-      let batchId = this.webhookEvent.sender.id;      
+      let batchId = this.webhookEvent.sender.id; 
+      
+      //saving tenant ID with PSID
+      BasicUser.create({
+        "firstName": "",
+        "lastName": "",
+        "PSID": this.webhookEvent.sender.id,
+        "tenantId": tenantID,
+        "lastLoggedIn": "",
+        "lastAnsweredTimestamp": "",
+        "answers": [
+          {
+            "question":"What crowded places have you been to since the Covid-19 epidemic outbreak?",
+            "answer": questionOne
+          },
+          {
+            "question":"Please select the date of contact",
+            "answer": questionTwo
+          },
+          {
+            "question":"What type of contact with the person who had been affected with Covid-19 do you think you had in the event?",
+            "answer": questionThree
+          }
+        ]
+      })
       response = [];
       response.push({
         text: `Hi ` + this.user.firstName + `!`,
       });
       response.push({
         text: `Welcome to Tracified Contact Tracer. We will now ask you a some questions. Please answer honestly to ensure the safety of yourself and everyone around you.`
-      });
-      response.push({
-        text: `Type "Hi" to get started`
       });
     }
     else {

@@ -13,7 +13,7 @@
 	"get_started": {
 		"welcome": "Hi {{userFirstName}}! Greetings from Tracified Contact Tracer",
 		"guidance": "At any time, use the menu below to navigate through the features",
-    	"help": "What we can do to help you today?"
+		"help": "What we can do to help you today?"
 	},
 	"leadgen": {
 		"promo": "Hi {{userFirstName}}, finding great outfits is now easier and more convenient.",
@@ -55,7 +55,7 @@
 		"default": "Hi {{userFirstName}}, my name is {{agentFirstName}}, I'm here to assist you today. How can I help you?",
 		"style": "Hi {{userFirstName}}, my name is {{agentFirstName}}, I’m here to answer questions you might have on our summer styles",
 		"end": "This is as far as the demo goes. Leverage the power of the messenger platform for your business. See https://fb.me/get-sample-oc to learn how to build a similar experience",
-    	"help": "Help"
+		"help": "Help"
 	},
 	"survey": {
 		"prompt": "Hi, want to get quick feedback on your recent experience with {{agentFirstName}}",
@@ -82,5 +82,18 @@
 	"Big Match": "Big Match",
 	"Airport": "Airport",
 	"What crowded places have you been to since the Covid-19 epidemic outbreak?": "What crowded places have you been to since the Covid-19 epidemic outbreak?",
-	"Public Transport": "Public Transport"
+	"Public Transport": "Public Transport",
+	"Please select the date of contact": "Please select the date of contact",
+	"Today": "Today",
+	"Yesturday": "Yesturday",
+	"Day before": "Day before",
+	"Three days back": "Three days back",
+	"A week ago": "A week ago",
+	"Day before yesturday": "Day before yesturday",
+	"Your response has been recorded": "Your response has been recorded",
+	"Close Contact - Been in closed space with Covid-19 infectious person.": "Close Contact - Been in closed space with Covid-19 infectious person.",
+	"Casual Contact - Not been in same confined space with Covid-19 infectious person": "Casual Contact - Not been in same confined space with Covid-19 infectious person",
+	"What type of contact with the person who had been affected with Covid-19 do you think you had in the event.": "What type of contact with the person who had been affected with Covid-19 do you think you had in the event.",
+	"Close Contact- Being in closed space with Covid-19 infectious person.": "Close Contact- Being in closed space with Covid-19 infectious person.",
+	"Casual Contact- Not being in same confined space with Covid-19 infectious person": "Casual Contact- Not being in same confined space with Covid-19 infectious person"
 }

@@ -8,17 +8,25 @@ const Response = require("./response"),
 module.exports = class Rating {
   static handlePayload(payload) {
     let response;
-    response = Response.genQuickReply(i18n.__("Please rate the level of severity you may have experienced"), [
+    response = Response.genQuickReply(i18n.__("Please select the date of contact"), [
         {
-          title: i18n.__("Low"),
+          title: i18n.__("Today"),
           payload: "QUESTION"
         },
         {
-          title: i18n.__("Medium"),
+          title: i18n.__("Yesturday"),
           payload: "QUESTION"
         },
         {
-          title: i18n.__("High"),
+          title: i18n.__("Day before yesturday"),
+          payload: "QUESTION"
+        },
+        {
+          title: i18n.__("Three days back"),
+          payload: "QUESTION"
+        },
+        {
+          title: i18n.__("A week ago"),
           payload: "QUESTION"
         }
     ]);
