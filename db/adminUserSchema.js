@@ -11,5 +11,5 @@ const adminUser = new Schema({
     lastLoggedIn: Date,
 });
 
-const AdminUserSchema = Mongoose.model("AdminUser", adminUser);
+const AdminUserSchema = mongoose.model("AdminUser", adminUser);
 module.exports = AdminUserSchema;

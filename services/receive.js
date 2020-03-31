@@ -19,6 +19,7 @@ const Curation = require("./curation"),
   Rating = require("./rating"),
   GraphAPi = require("./graph-api"),
   BasicUser = require("../db/userSchema"),
+  AdminUser = require("../db/adminUserSchema"),
   i18n = require("../i18n.config");
   let questionOne
   let questionTwo 
@@ -168,20 +169,64 @@ module.exports = class Receive {
       response = Response.genNuxMessage(this.user);
       questionOne = response;
     } else if (payload.includes("RATING")) {
+      BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
+        lastAnsweredTimestamp: Date.now(),
+        $push: {
+          answers: {
+            question: "What crowded places have you been to since the Covid-19 epidemic outbreak?",
+            answer: this.webhookEvent.message.text
+          }
+        }
+      }).then((res) => {
+        console.log("1st answer saved for PSID ", this.webhookEvent.sender.id)
+      }).catch((err) => {
+        console.log(err, " PSID ", this.webhookEvent.sender.id)
+      });
       response = Rating.handlePayload(payload);
       questionTwo = response;
     } else if (payload.includes("QUESTION")) {
+      BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
+        lastAnsweredTimestamp: Date.now(),
+        $push: {
+          answers: {
+            question: "Please select the date of contact",
+            answer: this.webhookEvent.message.text
+          }
+        }
+      }).then((res) => {
+        console.log("2nd answer saved for PSID ", this.webhookEvent.sender.id)
+      }).catch((err) => {
+        console.log(err, " PSID ", this.webhookEvent.sender.id)
+      });
       response = Question.handlePayload(payload);
       questionThree = response;     
     } else if (payload.includes("END")) {
+      BasicUser.findOne({ PSID: this.webhookEvent.sender.id }).then((res) => {
+        // TODO Retreive the previous question and answers add the new question and answer
+        // TODO add code to send data packet to backend
+        console.log("Found previous answers in DB for PSID ", this.webhookEvent.sender.id)
+        BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
+          lastAnsweredTimestamp: undefined,
+          answers: undefined
+        }).then((res) => {
+          console.log("Old answers removed from DB for PSID  ", this.webhookEvent.sender.id)
+        }).catch((err) => {
+          console.log(err, " PSID ", this.webhookEvent.sender.id)
+        });
+      }).catch((err) => {
+        console.log(err, " PSID ", this.webhookEvent.sender.id)
+      });
+      
+
       response = [];
       response.push({
         text: `Thank you for completing the survey. If you wish to redo the survey, please type "start over" in text box below`
       });
     } else if (payload.includes("TOKEN")) {
-      const extractedToken = payload.split('-')[1]; 
-      // TODO Save token in DB along with PSID
+      const extractedToken = payload.split('-')[1];
       if(extractedToken) {
+        // TODO Validate token and save PSID in DB
+        // AdminUser.findOne({tenantId: })
         response = [];
         response.push({
           text: this.user.firstName + ` You can simply forward the message that follows to your employees.`
@@ -218,28 +263,24 @@ module.exports = class Receive {
       let batchId = this.webhookEvent.sender.id; 
       
       //saving tenant ID with PSID
-      BasicUser.create({
-        "firstName": "",
-        "lastName": "",
-        "PSID": this.webhookEvent.sender.id,
-        "tenantId": tenantID,
-        "lastLoggedIn": "",
-        "lastAnsweredTimestamp": "",
-        "answers": [
-          {
-            "question":"What crowded places have you been to since the Covid-19 epidemic outbreak?",
-            "answer": questionOne
-          },
-          {
-            "question":"Please select the date of contact",
-            "answer": questionTwo
-          },
-          {
-            "question":"What type of contact with the person who had been affected with Covid-19 do you think you had in the event?",
-            "answer": questionThree
-          }
-        ]
-      })
+      BasicUser.findOne({PSID: this.webhookEvent.sender.id}).then((res) => {
+        if (res) {
+          console.log(this.webhookEvent.sender.id, " already exists in DB no need to save.")
+        } else {
+          console.log(this.webhookEvent.sender.id, " does not exists in DB need to save.")
+          BasicUser.create({
+            PSID: this.webhookEvent.sender.id,
+            tenantId: tenantID,
+            lastLoggedIn: Date.now(),
+          }).then((res) => {
+            console.log(this.webhookEvent.sender.id, " PSID user saved in DB.")
+          }).catch((err) => {
+            console.log(err, " PSID user details failed to save in DB.")
+          });
+        }
+      }).catch((err) => {
+        console.log(err)
+      });
       response = [];
       response.push({
         text: `Hi ` + this.user.firstName + `!`,
