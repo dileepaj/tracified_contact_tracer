@@ -1,0 +1,29 @@
+body {
+    background-color: #fbfeff;
+}
+
+.confirm {
+    align-content: center;
+    padding:0% 10% 0% 10%;
+}
+
+.page-head {
+    text-align: center;
+}
+
+.submit-button {
+    text-align: right;
+}
+
+.submit-button .btn {
+    background-color: #27a745;
+    border: #27a745;
+}
+
+.error-color {
+    color: red;
+}
+
+.redirect-btn {
+    display: none;
+}
