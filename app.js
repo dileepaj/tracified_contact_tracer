@@ -96,26 +96,16 @@ mongoose.Promise = global.Promise; // Use global promises for mongoose
 
 //add admin to db
 app.post("/registerAdmin", (req, res) => {
-	adminSchema.create({
-		firstName: req.body.firstName,
-		lastName: req.body.lastName,
-		PSID: req.body.PSID,
-    tenantId: req.body.tenantId,
-    token: req.body.token,
-    lastLoggedIn: req.body.lastLoggedIn
-	}).then(response => {
-    response.status(200).send("Admin added successfully");
-  }).catch(error => {
-    response.status(400).send("Admin not added" + error);
-  });
-  
-	// var newAdmin = new adminSchema(req.body);
+	var newAdmin = new adminSchema(req.body);
 
-	// newAdmin.save().then((data) => {
-	//   res.send("admin added");
-	// }).catch((error) => {
-	//   res.status(400).send("Admin not added." + error);
-	// });
+	newAdmin
+		.save()
+		.then((data) => {
+			res.status(200).send("Admin added successfully");
+		})
+		.catch((error) => {
+			res.status(403).send("Admin not added." + error);
+		});
 });
 
 // For admin registration

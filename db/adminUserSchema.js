@@ -9,7 +9,9 @@ const adminUser = new Schema({
     tenantId: String,
     token: String,
     lastLoggedIn: Date,
+    username: String,
+    password: String
 });
 
-const AdminUserSchema = Mongoose.model("AdminUser", adminUser);
+const AdminUserSchema = mongoose.model("AdminUser", adminUser);
 module.exports = AdminUserSchema;
