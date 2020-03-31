@@ -19,3 +19,11 @@ body {
     background-color: #27a745;
     border: #27a745;
 }
+
+.error-color {
+    color: red;
+}
+
+.redirect-btn {
+    display: none;
+}

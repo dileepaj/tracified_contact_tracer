@@ -10,6 +10,7 @@
 
   <link rel="stylesheet" href="css/confirm.css">
 
+  <script src="js/jwt-decode.js"></script>
   <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
     integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
     crossorigin="anonymous"></script>
@@ -20,13 +21,24 @@
     integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
     crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.min.js"></script>
-  
+
   <script src="js/confirm.js"></script>
+
+  <script type="text/javascript">
+
+    function stopRKey(evt) {
+      var evt = (evt) ? evt : ((event) ? event : null);
+      var node = (evt.target) ? evt.target : ((evt.srcElement) ? evt.srcElement : null);
+      if ((evt.keyCode == 13) && (node.type == "text")) { return false; }
+    }
+
+    document.onkeypress = stopRKey;
+  </script>
 
   <title>Confirm</title>
 </head>
 
-<body>
+<body onload="document.confirmForm.reset()">
   <div class="page-head">
     <div class="col-md-12 text-center mt-3">
       <img method="GET" class="mb-3" src="t_logo.png" alt="" width="54px" height="54px">
@@ -40,11 +52,16 @@
 
       <div class="form-group">
         <label for="confirm">Verification Code</label>
-        <input type="text" class="form-control" name="conCode" id="inputCode" placeholder="xxxxxx" required>
+        <input type="text" class="form-control" name="conCode" id="inputCode" placeholder="xxxxxx">
+        <small id="codeError" class="error-color"></small>
       </div>
 
       <div class="submit-button pt-2">
         <button type="button" class="btn btn-md btn-primary btn-block" onclick="submitConfForm()">Submit</button>
+      </div>
+
+      <div class="redirect-btn pt-2" id="rdctBtn">
+        <button type="button" class="btn btn-md btn-primary btn-block" onclick="redirectToFB()">Go to messenger</button>
       </div>
 
       <p class="mt-5 mb-3 text-muted text-center">Tracified © 2020</p>

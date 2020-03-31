@@ -32,10 +32,9 @@ function submitRegForm() {
 	getRegValues();
 	if (validate()) {
 		console.log("passed and proceed");
-		// validateEmpty();
 		encryption();
 		setRegJson();
-		// sendRegJson();
+		sendRegJson();
 	} else {
 		console.log("something went wrong");
 	}
@@ -87,7 +86,7 @@ function setRegJson() {
 	let tempAddress = "A street, B street, Colombo";
 	let tempDomain = "Domain";
 
-	formData = {
+	formJson = {
 		user: {
 			name: empName.value,
 			company: orgName.value,
@@ -100,29 +99,36 @@ function setRegJson() {
 		}
 	};
 
-	stringFormJson = JSON.stringify(formData);
-
-	console.log(formData);
-	console.log(stringFormJson);
+	console.log(formJson);
 }
 
 function sendRegJson() {
 	let url = "https://staging.admin.api.tracified.com/sign/signup";
 
-	const xhr = new XMLHttpRequest();
-
-	xhr.open("POST", url);
-	xhr.setRequestHeader("Content-Type", "application/json");
-	xhr.send(stringFormJson);
-
-	xhr.onreadystatechange = function() {
-		if (xhr.status == 201) {
-			console.log("passed", xhr.status);
+	postRegisterData(url, formJson).then((response) => {
+		if (response == 201) {
+			console.log("passed", response);
 			redirect();
 		} else {
-			console.log("failed", xhr.status);
+			console.log("failed", response);
 		}
-	};
+	});
+}
+
+async function postRegisterData(url, data) {
+	const response = await fetch(url, {
+		method: "POST",
+		mode: "cors",
+		cache: "no-cache",
+		credentials: "same-origin",
+		headers: {
+			"Content-Type": "application/json"
+		},
+		redirect: "follow",
+		referrerPolicy: "no-referrer",
+		body: JSON.stringify(data)
+	});
+	return await response.status;
 }
 
 function redirect() {
@@ -150,8 +156,6 @@ function checkMail() {
 
 	let url =
 		"https://staging.admin.api.tracified.com/sign/checkemail/" + document.getElementById("inputEmpEmail").value;
-
-	console.log(url);
 
 	const xhr = new XMLHttpRequest();
 	xhr.open("GET", url);

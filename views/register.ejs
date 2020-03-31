@@ -23,6 +23,17 @@
 
   <script src="js/register.js"></script>
 
+  <script type="text/javascript">
+
+    function stopRKey(evt) {
+      var evt = (evt) ? evt : ((event) ? event : null);
+      var node = (evt.target) ? evt.target : ((evt.srcElement) ? evt.srcElement : null);
+      if ((evt.keyCode == 13) && (node.type == "text")) { return false; }
+    }
+
+    document.onkeypress = stopRKey;
+  </script>
+  
   <title>Register</title>
 </head>
 
@@ -33,7 +44,7 @@
     </div>
     <h3>Tracified Contact Tracer</h3>
 
-      <h3 class="pt-3 font-weight-bold">Register</h3>
+    <h3 class="pt-3 font-weight-bold">Register</h3>
   </div>
   <div class="register">
     <form class="register-form" name="registerForm" id="refForm">
