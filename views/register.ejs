@@ -47,7 +47,7 @@
 
       <div class="form-group">
         <label for="empEmail">Email address</label>
-        <input type="email" class="form-control" name="empEmail" id="inputEmpEmail" placeholder="example@mail.com"
+        <input type="text" class="form-control" name="empEmail" id="inputEmpEmail" placeholder="example@mail.com"
           oninput="validateEmailFormat()" onblur="checkMail()">
         <small id="inputEmpEmailError" class="error-color"></small>
       </div>
@@ -316,7 +316,7 @@
       <div class="form-group">
         <label for="password">Password</label>
         <input type="password" class="form-control" name="password" id="inputPassword"
-          oninput="checkPasswordStrength(), clearErrorMessages('inputPassword')">
+          oninput="checkPasswordStrength(), clearErrorMessages('inputPassword'), cnfPassword()">
         <small id="inputPasswordError" class="error-color"></small>
         <small id="inputPasswordStrength"></small>
 
@@ -331,7 +331,6 @@
         <input type="password" class="form-control" name="confirmPassword" id="inputConfirmPassword"
           oninput="cnfPassword()">
         <small id="inputConfirmPasswordError" class="error-color"></small>
-        <small id="passwordMatch"></small>
 
         <div class="form-check form-check-inline show-pwd pt-1">
           <input class="form-check-input" type="checkbox" id="showConfPassword"

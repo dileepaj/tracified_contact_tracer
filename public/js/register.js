@@ -30,11 +30,15 @@ var pwdMatch;
 //Register Form functions
 function submitRegForm() {
 	getRegValues();
-	validate();
-	// validateEmpty();
-	encryption();
-	setRegJson();
-	// sendRegJson();
+	if (validate()) {
+		console.log("passed and proceed");
+		// validateEmpty();
+		encryption();
+		setRegJson();
+		// sendRegJson();
+	} else {
+		console.log("something went wrong");
+	}
 }
 
 function getRegValues() {
@@ -49,13 +53,18 @@ function getRegValues() {
 function validate() {
 	let notEmpty = validateEmpty();
 	let email = validateMail();
+	let pwd = validatePwd();
 
 	console.log("empty", notEmpty, "email", email);
 	console.log("new", newEmail, "format", emailFormat);
-	if(notEmpty && email) {
+	console.log("pwd", pwdValid, "match", pwdMatch);
+
+	if (notEmpty && email && pwd) {
 		console.log("pass");
+		return true;
 	} else {
 		console.log("fail");
+		return false;
 	}
 }
 
@@ -121,7 +130,15 @@ function redirect() {
 }
 
 function validateMail() {
-	if(newEmail && emailFormat) {
+	if (newEmail && emailFormat) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+function validatePwd() {
+	if (pwdValid && pwdMatch) {
 		return true;
 	} else {
 		return false;
@@ -142,10 +159,10 @@ function checkMail() {
 
 	xhr.onreadystatechange = function() {
 		if (xhr.status == 200) {
-			setError('inputEmpEmail', 'Email is already used.');
+			setError("inputEmpEmail", "Email is already used.");
 			newEmail = false;
-		} else if(xhr.status == 403) {
-			revert('inputEmpEmail');
+		} else if (xhr.status == 403 && emailFormat) {
+			revert("inputEmpEmail");
 			newEmail = true;
 		}
 	};
@@ -200,12 +217,14 @@ function validateEmpty() {
 	if (password.value == null || password.value == "") {
 		msg = "Please enter a password.";
 		setError("inputPassword", msg);
+		clearOtherMessages("inputPasswordStrength");
 		return false;
 	}
 
 	if (confPassword.value == null || confPassword.value == "") {
 		msg = "Please re-enter your password.";
 		setError("inputConfirmPassword", msg);
+		clearOtherMessages("passwordMatch");
 		return false;
 	}
 
@@ -280,12 +299,19 @@ function cnfPassword() {
 	let pwd = document.getElementById("inputPassword");
 	let cnfPwd = document.getElementById("inputConfirmPassword");
 
-	let message = document.getElementById("passwordMatch");
+	let message = document.getElementById("inputConfirmPasswordError");
 
 	if (pwd.value == null || pwd.value == "") {
 		setError("inputConfirmPassword", "Password field is empty");
 	} else {
-		if (pwd.value !== cnfPwd.value) {
+		setError("inputConfirmPassword", "");
+
+		if (!pwdValid) {
+			message.innerHTML = "Password does not meet the required length.";
+			message.style.color = "red";
+			cnfPwd.style.borderColor = "red";
+			pwdMatch = false;
+		} else if (pwd.value !== cnfPwd.value) {
 			message.innerHTML = "Passwords do not match.";
 			message.style.color = "red";
 			cnfPwd.style.borderColor = "red";
@@ -299,22 +325,10 @@ function cnfPassword() {
 	}
 }
 
-function clearOtherMessages() {
-	let message1 = document.getElementById("passwordMatch");
-	let message2 = document.getElementById("inputPasswordStrength");
+function clearOtherMessages(element) {
+	let message = document.getElementById(element);
 
-	if (!pwdMatch) {
-		message1.innerHTML = "";
-	}
-
-	if (!pwd) {
-		message2.innerHTML = "";
-	}
-
-	if (!pwd && !pwdMatch) {
-		message1.innerHTML = "";
-		message2.innerHTML = "";
-	}
+	message.innerHTML = "";
 }
 
 function clearErrorMessages(element) {
