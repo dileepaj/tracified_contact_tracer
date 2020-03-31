@@ -108,6 +108,14 @@ app.post("/registerAdmin", (req, res) => {
   }).catch(error => {
     response.status(400).send("Admin not added" + error);
   });
+  
+	// var newAdmin = new adminSchema(req.body);
+
+	// newAdmin.save().then((data) => {
+	//   res.send("admin added");
+	// }).catch((error) => {
+	//   res.status(400).send("Admin not added." + error);
+	// });
 });
 
 // For admin registration
