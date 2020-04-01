@@ -21,6 +21,7 @@ const Curation = require("./curation"),
   BasicUser = require("../db/userSchema"),
   AdminUser = require("../db/adminUserSchema"),
   request = require('request'),
+  axios = require('axios'),
   i18n = require("../i18n.config");
   let questionOne
   let questionTwo 
@@ -168,7 +169,6 @@ module.exports = class Receive {
     //Where questions are being called from
     //First question starts here
       response = Response.genNuxMessage(this.user);
-      questionOne = response;
     } else if (payload.includes("RATING")) {
       BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
         lastAnsweredTimestamp: Date.now(),
@@ -184,7 +184,7 @@ module.exports = class Receive {
         console.log(err, " PSID ", this.webhookEvent.sender.id)
       });
       response = Rating.handlePayload(payload);
-      questionTwo = response;
+      questionOne = this.webhookEvent.message.text;     
     } else if (payload.includes("QUESTION")) {
       BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
         lastAnsweredTimestamp: Date.now(),
@@ -200,19 +200,67 @@ module.exports = class Receive {
         console.log(err, " PSID ", this.webhookEvent.sender.id)
       });
       response = Question.handlePayload(payload);
-      questionThree = response;     
+      questionTwo = this.webhookEvent.message.text;     
     } else if (payload.includes("END")) {
+      BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
+        lastAnsweredTimestamp: Date.now(),
+        $push: {
+          answers: {
+            question: "What type of contact with the person who had been affected with Covid-19 do you think you had in the event.",
+            answer: this.webhookEvent.message.text
+          }
+        }
+      }).then((res) => {
+        console.log("2nd answer saved for PSID ", this.webhookEvent.sender.id)
+      }).catch((err) => {
+        console.log(err, " PSID ", this.webhookEvent.sender.id)
+      });
+      response = Question.handlePayload(payload);
+      questionThree = this.webhookEvent.message.text;
       BasicUser.findOne({ PSID: this.webhookEvent.sender.id }).then((res) => {
-        this.backendPost('https://api.tracified.com/api/v2/dataPackets', BasicUser, this.webhookEvent.sender.id);
-        console.log("Found previous answers in DB for PSID ", this.webhookEvent.sender.id)
-        BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
-          lastAnsweredTimestamp: undefined,
-          answers: undefined
-        }).then((res) => {
-          console.log("Old answers removed from DB for PSID  ", this.webhookEvent.sender.id)
+        const originalTDP = {
+          "WhatcrowdedplaceshaveyoubeentosincetheCovid-19epidemicoutbreak?": questionOne,
+          "Pleaseselectthedateofcontact": questionTwo,
+          "WhattypeofcontactwiththepersonwhohadbeenaffectedwithCovid-19doyouthinkyouhadintheevent.": questionThree
+        }
+        const tdp = {
+          txns: null,
+          data: originalTDP,
+          publicKey: [
+            {
+              publicKey: 'sdasda',
+              role: 'FieldOfficer'
+            },
+            {
+              publicKey: 'asdasfafa',
+              role: 'FieldOfficerApp'
+            }
+          ]
+        };
+
+        const identifier = {
+          type: "barcode",
+          PSID: this.webhookEvent.sender.id
+        }
+
+        let b64Token = Buffer.from(JSON.stringify(identifier)).toString("base64");
+        this.getStatus(res.tenantId, b64Token).then((status) => {
+          if(!status) {
+            this.genesis(tdp, res.tenantId);
+          }
+          this.postDataPacket(tdp, res.tenantId);
+          console.log("Found previous answers in DB for PSID ", this.webhookEvent.sender.id)
+          BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
+            lastAnsweredTimestamp: undefined,
+            answers: undefined
+          }).then((res) => {
+            console.log("Old answers removed from DB for PSID  ", this.webhookEvent.sender.id)
+          }).catch((err) => {
+            console.log(err, " PSID ", this.webhookEvent.sender.id)
+          });
         }).catch((err) => {
-          console.log(err, " PSID ", this.webhookEvent.sender.id)
-        });
+          console.log(err);
+        })
       }).catch((err) => {
         console.log(err, " PSID ", this.webhookEvent.sender.id)
       });
@@ -376,7 +424,51 @@ module.exports = class Receive {
   firstEntity(nlp, name) {
     return nlp && nlp.entities && nlp.entities[name] && nlp.entities[name][0];
   }
+  
+  getStatus(token, identifier) {
+    return this.adminGet('https://api.tracified.com/api/v2/status/' + identifier, token).then((res) => {
+      return res.body;
+    }).catch(err => {
+      return err; 
+    });
+  }
 
+  genesis(tdp, token) {
+    this.backendPost('https://api.tracified.com/api/v1/traceabilityProfiles/genesis', tdp, token).then((res) => {
+      return res.body;
+    }).catch(err => {
+      return err; 
+    });
+  }
+
+  postDataPacket(tdp, token) {
+    this.backendPost('https://api.tracified.com/api/v1/dataPackets', tdp, token).then((res) => {
+      return res.body;
+    }).catch(err => {
+      return err; 
+    });
+  }
+
+  adminGet(url, token) {
+    return new Promise((resolve, reject) => {
+      axios.get(url, {
+        observe: 'response',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'Application/json',
+          'Authorization': 'Bearer ' + token
+        }
+      })
+      .then(function (response) {
+        console.log(response);
+        resolve(response);
+      })
+      .catch(function (error) {
+        console.log(error);
+        reject(error);
+      });
+    });
+  }
 
   backendPost(url, payload, token) {
     return new Promise((resolve, reject) => {
@@ -387,7 +479,15 @@ module.exports = class Receive {
           'Content-Type': 'Application/json',
           'Authorization': 'Bearer ' + token
         }
+      }) 
+      .then(function (response) {
+        console.log(response);
+        resolve(response);
       })
+      .catch(function (error) {
+        console.log(error);
+        reject(error);
+      });
     });
   }
 
