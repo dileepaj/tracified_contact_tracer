@@ -17,58 +17,85 @@ var workflowJson = {
 		stages: [
 			{
 				name: "Low",
-				stageId: "104",
+				stageId: "100",
 				traceabilityData: {
 					"haveyouattendedanyeventswhereyouhavebeenincontactwithanyonesufferingfromCovid-19": {
-						name:
-							"Have you attended any events where you have been in contact with anyone suffering from Covid-19?",
-						mergerFunction: "isOneTrue",
-						type: 0
+						name: "Have you attended any events where you have been in contact with anyone suffering from Covid-19?",
+						mergerFunction: "carryForward",
+						prefix: "",
+						postfix: "",
+						type: 5
 					},
-					"doyouhaveanyclosefriendsorfamilymemberswhoarecurrentlysufferingfromCovid-19": {
-						name:
-							"Do you have any close friends or family members who are currently suffering from Covid-19?",
-						mergerFunction: "isOneTrue",
-						type: 0
-					}
+					"pleaseselectthedateofcontact": {
+						name: "Please select the date of contact",
+						mergerFunction: "carryForward",
+						prefix: "",
+						postfix: "",
+						type: 5
+					},
+					"whattypeofcontactwiththepersonwhohadbeenaffectedwithCovid-19doyouthinkyouhadintheevent": {
+						name: "What type of contact with the person who had been affected with Covid-19 do you think you had in the event",
+						mergerFunction: "carryForward",
+						prefix: "",
+						postfix: "",
+						type: 5
+					},
 				},
 				mergerAttribute: ""
 			},
 			{
 				name: "Medium",
-				stageId: "105",
+				stageId: "101",
 				traceabilityData: {
 					"haveyouattendedanyeventswhereyouhavebeenincontactwithanyonesufferingfromCovid-19": {
-						name:
-							"Have you attended any events where you have been in contact with anyone suffering from Covid-19?",
-						mergerFunction: "isOneTrue",
-						type: 0
+						name: "Have you attended any events where you have been in contact with anyone suffering from Covid-19?",
+						mergerFunction: "carryForward",
+						prefix: "",
+						postfix: "",
+						type: 5
 					},
-					"doyouhaveanyclosefriendsorfamilymemberswhoarecurrentlysufferingfromCovid-19": {
-						name:
-							"Do you have any close friends or family members who are currently suffering from Covid-19?",
-						mergerFunction: "isOneTrue",
-						type: 0
-					}
+					"pleaseselectthedateofcontact": {
+						name: "Please select the date of contact",
+						mergerFunction: "carryForward",
+						prefix: "",
+						postfix: "",
+						type: 5
+					},
+					"whattypeofcontactwiththepersonwhohadbeenaffectedwithCovid-19doyouthinkyouhadintheevent": {
+						name: "What type of contact with the person who had been affected with Covid-19 do you think you had in the event",
+						mergerFunction: "carryForward",
+						prefix: "",
+						postfix: "",
+						type: 5
+					},
 				},
 				mergerAttribute: ""
 			},
 			{
 				name: "Critical",
-				stageId: "106",
+				stageId: "102",
 				traceabilityData: {
 					"haveyouattendedanyeventswhereyouhavebeenincontactwithanyonesufferingfromCovid-19": {
-						name:
-							"Have you attended any events where you have been in contact with anyone suffering from Covid-19?",
-						mergerFunction: "isOneTrue",
-						type: 0
+						name: "Have you attended any events where you have been in contact with anyone suffering from Covid-19?",
+						mergerFunction: "carryForward",
+						prefix: "",
+						postfix: "",
+						type: 5
 					},
-					"doyouhaveanyclosefriendsorfamilymemberswhoarecurrentlysufferingfromCovid-19": {
-						name:
-							"Do you have any close friends or family members who are currently suffering from Covid-19?",
-						mergerFunction: "isOneTrue",
-						type: 0
-					}
+					"pleaseselectthedateofcontact": {
+						name: "Please select the date of contact",
+						mergerFunction: "carryForward",
+						prefix: "",
+						postfix: "",
+						type: 5
+					},
+					"whattypeofcontactwiththepersonwhohadbeenaffectedwithCovid-19doyouthinkyouhadintheevent": {
+						name: "What type of contact with the person who had been affected with Covid-19 do you think you had in the event",
+						mergerFunction: "carryForward",
+						prefix: "",
+						postfix: "",
+						type: 5
+					},
 				},
 				mergerAttribute: ""
 			}
