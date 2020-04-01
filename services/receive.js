@@ -219,9 +219,9 @@ module.exports = class Receive {
       questionThree = this.webhookEvent.message.text;
       BasicUser.findOne({ PSID: this.webhookEvent.sender.id }).then((res) => {
         const originalTDP = {
-          "WhatcrowdedplaceshaveyoubeentosincetheCovid-19epidemicoutbreak?": questionOne,
-          "Pleaseselectthedateofcontact": questionTwo,
-          "WhattypeofcontactwiththepersonwhohadbeenaffectedwithCovid-19doyouthinkyouhadintheevent.": questionThree
+          "haveyouattendedanyeventswhereyouhavebeenincontactwithanyonesufferingfromCovid-19": res.answers[0].answer,
+          "pleaseselectthedateofcontact": res.answers[1].answer,
+          "whattypeofcontactwiththepersonwhohadbeenaffectedwithCovid-19doyouthinkyouhadintheevent": this.webhookEvent.message.text
         }
         const tdp = {
           txns: null,
@@ -240,27 +240,43 @@ module.exports = class Receive {
 
         const identifier = {
           type: "barcode",
-          PSID: this.webhookEvent.sender.id
+          id: this.webhookEvent.sender.id
         }
 
-        let b64Token = Buffer.from(JSON.stringify(identifier)).toString("base64");
-        this.getStatus(res.tenantId, b64Token).then((status) => {
-          if(!status) {
-            this.genesis(tdp, res.tenantId);
-          }
-          this.postDataPacket(tdp, res.tenantId);
-          console.log("Found previous answers in DB for PSID ", this.webhookEvent.sender.id)
-          BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
-            lastAnsweredTimestamp: undefined,
-            answers: undefined
-          }).then((res) => {
-            console.log("Old answers removed from DB for PSID  ", this.webhookEvent.sender.id)
+        let identifierBase64 = Buffer.from(JSON.stringify(identifier)).toString("base64");
+        AdminUser.findOne({tenantId: res.tenantId}).then((adminUser) => {
+          // TODO admin wont have permissions
+          this.getStatus(adminUser.token, identifierBase64).then((status) => {
+            if(!status[0].status) {
+              this.genesis(tdp, adminUser.token).then((genesisResult) => {
+                this.postDataPacket(tdp, adminUser.token).then((tdpResult) => {
+                  console.log("Saved TDP successfully", tdpResult);
+                }).catch((err) => {
+                  console.log("Saving TDP failed", tdpResult);
+                });
+              });
+            } else {
+              this.postDataPacket(tdp, adminUser.token).then((tdpResult) => {
+                console.log("Saved TDP successfully", tdpResult);
+              }).catch((err) => {
+                console.log("Saving TDP failed", tdpResult);
+              });
+            }
+            console.log("Found previous answers in DB for PSID ", this.webhookEvent.sender.id)
+            BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
+              lastAnsweredTimestamp: undefined,
+              answers: undefined
+            }).then((res) => {
+              console.log("Old answers removed from DB for PSID  ", this.webhookEvent.sender.id)
+            }).catch((err) => {
+              console.log(err, " PSID ", this.webhookEvent.sender.id)
+            });
           }).catch((err) => {
-            console.log(err, " PSID ", this.webhookEvent.sender.id)
-          });
+            console.log(err);
+          })
         }).catch((err) => {
-          console.log(err);
-        })
+          console.log(err, " admin user not present for tenant " + res.tenantId);
+        });
       }).catch((err) => {
         console.log(err, " PSID ", this.webhookEvent.sender.id)
       });
@@ -426,7 +442,7 @@ module.exports = class Receive {
   }
   
   getStatus(token, identifier) {
-    return this.adminGet('https://api.tracified.com/api/v2/status/' + identifier, token).then((res) => {
+    return this.adminGet('https://api.tracified.com/api/v2/identifiers/status/' + identifier, token).then((res) => {
       return res.body;
     }).catch(err => {
       return err; 
