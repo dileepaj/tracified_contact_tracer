@@ -237,7 +237,14 @@ module.exports = class Receive {
             }
           ]
         };
-        this.getStatus(res.tenantId).then((status) => {
+
+        const identifier = {
+          type: "barcode",
+          PSID: this.webhookEvent.sender.id
+        }
+
+        let b64Token = Buffer.from(JSON.stringify(identifier)).toString("base64");
+        this.getStatus(res.tenantId, b64Token).then((status) => {
           if(!status) {
             this.genesis(tdp, res.tenantId);
           }
@@ -405,8 +412,8 @@ module.exports = class Receive {
     return nlp && nlp.entities && nlp.entities[name] && nlp.entities[name][0];
   }
   
-  getStatus(token) {
-    return this.adminGet('https://admin.api.tracified.com/api/status', token).then((res) => {
+  getStatus(token, identifier) {
+    return this.adminGet('https://api.tracified.com/api/v2/status/' + identifier, token).then((res) => {
       return res.body;
     }).catch(err => {
       return err; 
