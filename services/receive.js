@@ -21,6 +21,7 @@ const Curation = require("./curation"),
   BasicUser = require("../db/userSchema"),
   AdminUser = require("../db/adminUserSchema"),
   request = require('request'),
+  axios = require('axios'),
   i18n = require("../i18n.config");
   let questionOne
   let questionTwo 
@@ -168,7 +169,6 @@ module.exports = class Receive {
     //Where questions are being called from
     //First question starts here
       response = Response.genNuxMessage(this.user);
-      questionOne = response;
     } else if (payload.includes("RATING")) {
       BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
         lastAnsweredTimestamp: Date.now(),
@@ -184,7 +184,7 @@ module.exports = class Receive {
         console.log(err, " PSID ", this.webhookEvent.sender.id)
       });
       response = Rating.handlePayload(payload);
-      questionTwo = response;
+      questionOne = this.webhookEvent.message.text;     
     } else if (payload.includes("QUESTION")) {
       BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
         lastAnsweredTimestamp: Date.now(),
@@ -200,34 +200,48 @@ module.exports = class Receive {
         console.log(err, " PSID ", this.webhookEvent.sender.id)
       });
       response = Question.handlePayload(payload);
-      questionThree = response;     
+      questionTwo = this.webhookEvent.message.text;     
     } else if (payload.includes("END")) {
+      BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
+        lastAnsweredTimestamp: Date.now(),
+        $push: {
+          answers: {
+            question: "What type of contact with the person who had been affected with Covid-19 do you think you had in the event.",
+            answer: this.webhookEvent.message.text
+          }
+        }
+      }).then((res) => {
+        console.log("2nd answer saved for PSID ", this.webhookEvent.sender.id)
+      }).catch((err) => {
+        console.log(err, " PSID ", this.webhookEvent.sender.id)
+      });
+      response = Question.handlePayload(payload);
+      questionThree = this.webhookEvent.message.text;
       BasicUser.findOne({ PSID: this.webhookEvent.sender.id }).then((res) => {
-        originalTDP = {
+        const originalTDP = {
           "WhatcrowdedplaceshaveyoubeentosincetheCovid-19epidemicoutbreak?": questionOne,
           "Pleaseselectthedateofcontact": questionTwo,
           "WhattypeofcontactwiththepersonwhohadbeenaffectedwithCovid-19doyouthinkyouhadintheevent.": questionThree
         }
         const tdp = {
           txns: null,
-          data: JSON.parse(stringify(originalTDP)),
+          data: originalTDP,
           publicKey: [
             {
-              publicKey: sourcePublicKey,
+              publicKey: 'sdasda',
               role: 'FieldOfficer'
             },
             {
-              publicKey: appPublicKey,
+              publicKey: 'asdasfafa',
               role: 'FieldOfficerApp'
             }
           ]
         };
-        //Genesis
-        this.getStatus(this.webhookEvent.sender.id).then((status) => {
-          if(status) {
-            this.genesis(this.webhookEvent.sender.id);
+        this.getStatus(res.tenantId).then((status) => {
+          if(!status) {
+            this.genesis(tdp, res.tenantId);
           }
-          this.postDataPacket(tdp, this.webhookEvent.sender.id);
+          this.postDataPacket(tdp, res.tenantId);
           console.log("Found previous answers in DB for PSID ", this.webhookEvent.sender.id)
           BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
             lastAnsweredTimestamp: undefined,
@@ -399,7 +413,7 @@ module.exports = class Receive {
     });
   }
 
-  genesis(token) {
+  genesis(tdp, token) {
     this.backendPost('https://api.tracified.com/api/v1/traceabilityProfiles/genesis', tdp, token).then((res) => {
       return res.body;
     }).catch(err => {
@@ -417,7 +431,7 @@ module.exports = class Receive {
 
   adminGet(url, token) {
     return new Promise((resolve, reject) => {
-      request.get(url, {
+      axios.get(url, {
         observe: 'response',
         headers: {
           'Accept': 'application/json',
@@ -425,17 +439,14 @@ module.exports = class Receive {
           'Authorization': 'Bearer ' + token
         }
       })
-      .timeout(25000)
-        .subscribe(
-          response => {
-            console.log(response);
-            resolve(response);
-          },
-          error => {
-            console.log(error);
-            reject(error);
-          }
-        );
+      .then(function (response) {
+        console.log(response);
+        resolve(response);
+      })
+      .catch(function (error) {
+        console.log(error);
+        reject(error);
+      });
     });
   }
 
@@ -449,17 +460,14 @@ module.exports = class Receive {
           'Authorization': 'Bearer ' + token
         }
       }) 
-        .timeout(25000)
-        .subscribe(
-          response => {
-            console.log(response);
-            resolve(response);
-          },
-          error => {
-            console.log(error);
-            reject(error);
-          }
-        );
+      .then(function (response) {
+        console.log(response);
+        resolve(response);
+      })
+      .catch(function (error) {
+        console.log(error);
+        reject(error);
+      });
     });
   }
 
