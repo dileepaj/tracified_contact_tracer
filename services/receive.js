@@ -227,6 +227,14 @@ module.exports = class Receive {
       if(extractedToken) {
         // TODO Validate token and save PSID in DB
         // AdminUser.findOne({tenantId: })
+        let decode = jwt_decode(extractedToken);
+        let tenantId;
+        if(decode.exp > Date.now()) {
+          tenantId = decode.tenantID;
+        } else {
+          console.log("token expired");
+        }
+        
         response = [];
         response.push({
           text: this.user.firstName + ` You can simply forward the message that follows to your employees.`
