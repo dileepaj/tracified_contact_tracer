@@ -27,6 +27,8 @@ const Curation = require("./curation"),
   let questionTwo 
   let questionThree
 
+const jwt = require('jsonwebtoken');
+
 module.exports = class Receive {
   constructor(user, webhookEvent) {
     this.user = user;
@@ -76,6 +78,8 @@ module.exports = class Receive {
 
   // Handles messages events with text
   handleTextMessage() {
+    // TODO logic to identify normal text for first question by checking DB
+    console.log(this.webhookEvent, this.webhookEvent.message, JSON.stringify(this.webhookEvent))
     console.log(
       "Received text:",
       `${this.webhookEvent.message.text} for ${this.user.psid}`
@@ -141,13 +145,13 @@ module.exports = class Receive {
       // Get the payload of the postback
       payload = postback.payload;
     }
-    return this.handlePayload(payload.toUpperCase());
+    return this.handlePayload(payload);
   }
 
   // Handles referral events
   handleReferral() {
     // Get the payload of the postback
-    let payload = this.webhookEvent.referral.ref.toUpperCase();
+    let payload = this.webhookEvent.referral.ref;
 
     return this.handlePayload(payload);
   }
@@ -162,14 +166,14 @@ module.exports = class Receive {
 
     // Set the response based on the payload
     if (
-      payload === "GET_STARTED" ||
+      payload.toUpperCase() === "GET_STARTED" ||
       payload === "DEVDOCS" ||
       payload === "GITHUB"
     ) {
     //Where questions are being called from
     //First question starts here
       response = Response.genNuxMessage(this.user);
-    } else if (payload.includes("RATING")) {
+    } else if (payload.toUpperCase().includes("RATING")) {
       BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
         lastAnsweredTimestamp: Date.now(),
         $push: {
@@ -185,7 +189,7 @@ module.exports = class Receive {
       });
       response = Rating.handlePayload(payload);
       questionOne = this.webhookEvent.message.text;     
-    } else if (payload.includes("QUESTION")) {
+    } else if (payload.toUpperCase().includes("QUESTION")) {
       BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
         lastAnsweredTimestamp: Date.now(),
         $push: {
@@ -201,7 +205,7 @@ module.exports = class Receive {
       });
       response = Question.handlePayload(payload);
       questionTwo = this.webhookEvent.message.text;     
-    } else if (payload.includes("END")) {
+    } else if (payload.toUpperCase().includes("END")) {
       BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
         lastAnsweredTimestamp: Date.now(),
         $push: {
@@ -211,7 +215,7 @@ module.exports = class Receive {
           }
         }
       }).then((res) => {
-        console.log("2nd answer saved for PSID ", this.webhookEvent.sender.id)
+        console.log("3rd answer saved for PSID ", this.webhookEvent.sender.id)
       }).catch((err) => {
         console.log(err, " PSID ", this.webhookEvent.sender.id)
       });
@@ -287,16 +291,16 @@ module.exports = class Receive {
         text: `Thank you for completing the survey. If you wish to redo the survey, please type "start over" in text box below`
       });
     } else if (payload.includes("TOKEN")) {
-      const extractedToken = payload.split('-')[1];
+      const extractedToken = payload.substring(payload.indexOf('-') + 1);
       if(extractedToken) {
         // TODO Validate token and save PSID in DB
-        let decode = jwt_decode(extractedToken);
+        let decode = jwt.decode(extractedToken);
         let tenantId;
-        if(decode.exp > Date.now()) {
+        // if(decode.exp > Date.now()) {
           tenantId = decode.tenantID;
-        } else {
-          console.log("token expired");
-        }        
+        // } else {
+        //   console.log("token expired");
+        // }        
         AdminUser.findOneAndUpdate({tenantId: tenantId}, {
           PSID: this.webhookEvent.sender.id,
         }).then((res) => {
@@ -336,7 +340,7 @@ module.exports = class Receive {
       // }];
       
     } else if (payload.includes("TENANTID")) {
-      const tenantID = payload.split('-')[1]; 
+      const tenantID = payload.substring(payload.indexOf('-') + 1); 
       let batchId = this.webhookEvent.sender.id; 
       
       //saving tenant ID with PSID
