@@ -14,11 +14,11 @@ module.exports = class Rating {
           payload: "QUESTION"
         },
         {
-          title: i18n.__("Yesturday"),
+          title: i18n.__("Yesterday"),
           payload: "QUESTION"
         },
         {
-          title: i18n.__("Day before yesturday"),
+          title: i18n.__("Day before Yesterday"),
           payload: "QUESTION"
         },
         {
