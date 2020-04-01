@@ -203,7 +203,31 @@ module.exports = class Receive {
       questionThree = response;     
     } else if (payload.includes("END")) {
       BasicUser.findOne({ PSID: this.webhookEvent.sender.id }).then((res) => {
-        this.backendPost('https://api.tracified.com/api/v2/dataPackets', BasicUser, this.webhookEvent.sender.id);
+        originalTDP = {
+          "WhatcrowdedplaceshaveyoubeentosincetheCovid-19epidemicoutbreak?": questionOne,
+          "Pleaseselectthedateofcontact": questionTwo,
+          "WhattypeofcontactwiththepersonwhohadbeenaffectedwithCovid-19doyouthinkyouhadintheevent.": questionThree
+        }
+        const tdp = {
+          txns: null,
+          data: JSON.parse(stringify(originalTDP)),
+          publicKey: [
+            {
+              publicKey: sourcePublicKey,
+              role: 'FieldOfficer'
+            },
+            {
+              publicKey: appPublicKey,
+              role: 'FieldOfficerApp'
+            }
+          ]
+        };
+        //Genesis
+        status = this.getStatus(this.webhookEvent.sender.id);
+        if(status) {
+          this.genesis(this.webhookEvent.sender.id);
+        }
+        this.postDataPacket(tdp, this.webhookEvent.sender.id);
         console.log("Found previous answers in DB for PSID ", this.webhookEvent.sender.id)
         BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
           lastAnsweredTimestamp: undefined,
@@ -363,7 +387,54 @@ module.exports = class Receive {
   firstEntity(nlp, name) {
     return nlp && nlp.entities && nlp.entities[name] && nlp.entities[name][0];
   }
+  
+  getStatus(token) {
+    this.adminGet('https://admin.api.tracified.com/api/status', token).then((res) => {
+      return res.body;
+    }).catch(err => {
+      return err; 
+    });
+  }
 
+  genesis(token) {
+    this.backendPost('https://api.tracified.com/api/v1/traceabilityProfiles/genesis', tdp, token).then((res) => {
+      return res.body;
+    }).catch(err => {
+      return err; 
+    });
+  }
+
+  postDataPacket(tdp, token) {
+    this.backendPost('https://api.tracified.com/api/v1/dataPackets', tdp, token).then((res) => {
+      return res.body;
+    }).catch(err => {
+      return err; 
+    });
+  }
+
+  adminGet(url, token) {
+    return new Promise((resolve, reject) => {
+      request.get(url, {
+        observe: 'response',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'Application/json',
+          'Authorization': 'Bearer ' + token
+        }
+      })
+      .timeout(25000)
+        .subscribe(
+          response => {
+            console.log(response);
+            resolve(response);
+          },
+          error => {
+            console.log(error);
+            reject(error);
+          }
+        );
+    });
+  }
 
   backendPost(url, payload, token) {
     return new Promise((resolve, reject) => {
@@ -374,7 +445,18 @@ module.exports = class Receive {
           'Content-Type': 'Application/json',
           'Authorization': 'Bearer ' + token
         }
-      })
+      }) 
+        .timeout(25000)
+        .subscribe(
+          response => {
+            console.log(response);
+            resolve(response);
+          },
+          error => {
+            console.log(error);
+            reject(error);
+          }
+        );
     });
   }
 
