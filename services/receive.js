@@ -226,21 +226,26 @@ module.exports = class Receive {
       const extractedToken = payload.split('-')[1];
       if(extractedToken) {
         // TODO Validate token and save PSID in DB
-        // AdminUser.findOne({tenantId: })
         let decode = jwt_decode(extractedToken);
         let tenantId;
         if(decode.exp > Date.now()) {
           tenantId = decode.tenantID;
         } else {
           console.log("token expired");
-        }
-        
+        }        
+        AdminUser.findOneAndUpdate({tenantId: tenantId}, {
+          PSID: this.webhookEvent.sender.id,
+        }).then((res) => {
+          console.log("admin user for tenant ", tenantId, " attached to PSID ", this.webhookEvent.sender.id)
+        }).catch((err) => {
+          console.log("admin user for tenant ", tenantId, " failed to attach PSID ", this.webhookEvent.sender.id)
+        });
         response = [];
         response.push({
           text: this.user.firstName + ` You can simply forward the message that follows to your employees.`
         });
         response.push({
-          text: `Hi! The company has partnered with Tracified Contact Tracer to help fight against the COVID-19 virus. Please follow this link and do the needful https://m.me/101757184804637?ref=TENANTID-asda. The company look forwards to your full co-operation. Thank you.`,
+          text: `Hi! The company has partnered with Tracified Contact Tracer to help fight against the COVID-19 virus. Please follow this link and do the needful https://m.me/101757184804637?ref=TENANTID-` + tenantId +`. The company look forwards to your full co-operation. Thank you.`,
         });
       } else {
         response.push({
