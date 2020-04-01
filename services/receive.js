@@ -223,20 +223,23 @@ module.exports = class Receive {
           ]
         };
         //Genesis
-        status = this.getStatus(this.webhookEvent.sender.id);
-        if(status) {
-          this.genesis(this.webhookEvent.sender.id);
-        }
-        this.postDataPacket(tdp, this.webhookEvent.sender.id);
-        console.log("Found previous answers in DB for PSID ", this.webhookEvent.sender.id)
-        BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
-          lastAnsweredTimestamp: undefined,
-          answers: undefined
-        }).then((res) => {
-          console.log("Old answers removed from DB for PSID  ", this.webhookEvent.sender.id)
+        this.getStatus(this.webhookEvent.sender.id).then((status) => {
+          if(status) {
+            this.genesis(this.webhookEvent.sender.id);
+          }
+          this.postDataPacket(tdp, this.webhookEvent.sender.id);
+          console.log("Found previous answers in DB for PSID ", this.webhookEvent.sender.id)
+          BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
+            lastAnsweredTimestamp: undefined,
+            answers: undefined
+          }).then((res) => {
+            console.log("Old answers removed from DB for PSID  ", this.webhookEvent.sender.id)
+          }).catch((err) => {
+            console.log(err, " PSID ", this.webhookEvent.sender.id)
+          });
         }).catch((err) => {
-          console.log(err, " PSID ", this.webhookEvent.sender.id)
-        });
+          console.log(err);
+        })
       }).catch((err) => {
         console.log(err, " PSID ", this.webhookEvent.sender.id)
       });
@@ -389,7 +392,7 @@ module.exports = class Receive {
   }
   
   getStatus(token) {
-    this.adminGet('https://admin.api.tracified.com/api/status', token).then((res) => {
+    return this.adminGet('https://admin.api.tracified.com/api/status', token).then((res) => {
       return res.body;
     }).catch(err => {
       return err; 
