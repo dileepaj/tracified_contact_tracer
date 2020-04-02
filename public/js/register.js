@@ -103,7 +103,7 @@ function setRegJson() {
 }
 
 function sendRegJson() {
-	let url = "https://staging.admin.api.tracified.com/sign/signup";
+	let url = "https://admin.api.tracified.com/sign/signup";
 
 	postRegisterData(url, formJson).then((response) => {
 		if (response == 201) {
@@ -155,7 +155,7 @@ function checkMail() {
 	console.log(document.getElementById("inputEmpEmail").value);
 
 	let url =
-		"https://staging.admin.api.tracified.com/sign/checkemail/" + document.getElementById("inputEmpEmail").value;
+		"https://admin.api.tracified.com/sign/checkemail/" + document.getElementById("inputEmpEmail").value;
 
 	const xhr = new XMLHttpRequest();
 	xhr.open("GET", url);
