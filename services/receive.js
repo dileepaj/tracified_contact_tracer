@@ -81,7 +81,7 @@ module.exports = class Receive {
     if (Array.isArray(responses)) {
       let delay = 0;
       for (let response of responses) {
-        this.sendMessage(response, delay * 2000);
+        this.sendMessage(response, delay * 1000);
         delay++;
       }
     } else {
@@ -466,6 +466,7 @@ module.exports = class Receive {
       response.push({
         text: `Welcome to Tracified Contact Tracer. We will now ask you a some questions. Please answer honestly to ensure the safety of yourself and everyone around you.`
       });
+      response.push(Response.genNuxMessage(this.user));
     }
     else {
       response = {
