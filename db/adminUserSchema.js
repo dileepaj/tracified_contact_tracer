@@ -10,7 +10,12 @@ const adminUser = new Schema({
     token: String,
     lastLoggedIn: Date,
     username: String,
-    password: String
+    password: String,
+    item: {
+        itemName: String, 
+        itemID: String,
+        stages: mongoose.Schema.Types.Mixed
+    },
 });
 
 const AdminUserSchema = mongoose.model("AdminUser", adminUser);
