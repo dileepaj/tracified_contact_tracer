@@ -143,7 +143,7 @@ function setConfJson() {
 }
 
 function confirm() {
-	const url = "https://staging.admin.api.tracified.com/sign/confirm";
+	const url = "https://admin.api.tracified.com/sign/confirm";
 
 	postData(url, confirmJSON).then((response) => {
 		console.log(response);
@@ -159,7 +159,7 @@ function confirm() {
 }
 
 function sendWorkflowJson(token) {
-	let url = "https://staging.admin.api.tracified.com/api/addworkflow";
+	let url = "https://admin.api.tracified.com/api/addworkflow";
 	let decode = jwt_decode(token);
 	workflowJson.workflows.name = retName;
 	workflowJson.workflows.tenantId = decode.tenantID;
@@ -208,7 +208,7 @@ async function postLoginData(url, data) {
 }
 
 function login() {
-	const url = "https://staging.admin.api.tracified.com/sign/login";
+	const url = "https://admin.api.tracified.com/sign/login";
 	const redirectUrl = "https://m.me/101757184804637?ref=TOKEN-";
 
 	let loginJSON = {
