@@ -281,20 +281,6 @@ module.exports = class Receive {
           "pleaseselectthedateofcontact": res.answers[1].answer,
           "whattypeofcontactwiththepersonwhohadbeenaffectedwithCovid-19doyouthinkyouhadintheevent": this.webhookEvent.message.text
         }
-        const tdp = {
-          txns: null,
-          data: originalTDP,
-          publicKey: [
-            {
-              publicKey: 'sdasda',
-              role: 'FieldOfficer'
-            },
-            {
-              publicKey: 'asdasfafa',
-              role: 'FieldOfficerApp'
-            }
-          ]
-        };
 
         const identifier = {
           type: "barcode",
@@ -303,17 +289,74 @@ module.exports = class Receive {
 
         let identifierBase64 = Buffer.from(JSON.stringify(identifier)).toString("base64");
         AdminUser.findOne({tenantId: res.tenantId}).then((adminUser) => {
-          // TODO admin wont have permissions
           this.getStatus(adminUser.token, identifierBase64).then((status) => {
+            const datetime = new Date();
+            const tdp = {
+              txns: [
+                {
+                  xdr: "sample-xdr",
+                  identifier: identifierBase64,
+                }
+              ],
+              data: {
+                header: {
+                  stageID: "100",
+                  timestamp: datetime.toISOString(),
+                  identifiers: [
+                    identifierBase64
+                  ],
+                  item: {
+                    itemID: adminUser.item.itemID,
+                    itemName: adminUser.item.itemName
+                  },
+                  workflowRevision: 0
+                },
+                data: originalTDP
+              },
+              publicKey: [
+                {
+                  publicKey: 'sdasda',
+                  role: 'FieldOfficer'
+                },
+                {
+                  publicKey: 'asdasfafa',
+                  role: 'FieldOfficerApp'
+                }
+              ]
+            };
             if(!status[0].status) {
-              this.genesis(tdp, adminUser.token).then((genesisResult) => {
+              const genesisPayload = {
+                "data": {
+                  "header": {
+                    "item": {
+                      "itemID": adminUser.item.itemID,
+                      "itemName": adminUser.item.itemName,
+                    },
+                    "stageID": "100",
+                    "identifiers": [
+                      identifierBase64,
+                    ]
+                  }
+                },
+                "txns": [
+                  {
+                    "xdr": "sample-xdr",
+                    "identifier": identifierBase64
+                  }
+                ]
+              }
+              this.genesis(genesisPayload, adminUser.token).then((genesisResult) => {
+                console.log("genesis carried out successfully ")
                 this.postDataPacket(tdp, adminUser.token).then((tdpResult) => {
                   console.log("Saved TDP successfully", tdpResult);
                 }).catch((err) => {
                   console.log("Saving TDP failed", tdpResult);
                 });
+              }).catch((err) => {
+                console.log("Gensis failed for ", identifierBase64, err);
               });
             } else {
+              tdp.data.header.stageID = status[0].stage;
               this.postDataPacket(tdp, adminUser.token).then((tdpResult) => {
                 console.log("Saved TDP successfully", tdpResult);
               }).catch((err) => {
@@ -347,7 +390,7 @@ module.exports = class Receive {
     } else if (payload.includes("TOKEN")) {
       const extractedToken = payload.substring(payload.indexOf('-') + 1);
       if(extractedToken) {
-        // TODO Validate token and save PSID in DB
+        // TODO Validate token
         let decode = jwt.decode(extractedToken);
         let tenantId;
         // if(decode.exp > Date.now()) {
@@ -501,23 +544,23 @@ module.exports = class Receive {
   
   getStatus(token, identifier) {
     return this.adminGet('https://api.tracified.com/api/v2/identifiers/status/' + identifier, token).then((res) => {
-      return res.body;
+      return res.data;
     }).catch(err => {
       return err; 
     });
   }
 
   genesis(tdp, token) {
-    this.backendPost('https://api.tracified.com/api/v1/traceabilityProfiles/genesis', tdp, token).then((res) => {
-      return res.body;
+    return this.backendPost('https://api.tracified.com/api/v2/traceabilityProfiles/genesis', tdp, token).then((res) => {
+      return res.data;
     }).catch(err => {
       return err; 
     });
   }
 
   postDataPacket(tdp, token) {
-    this.backendPost('https://api.tracified.com/api/v1/dataPackets', tdp, token).then((res) => {
-      return res.body;
+    return this.backendPost('https://api.tracified.com/api/v2/dataPackets', tdp, token).then((res) => {
+      return res.data;
     }).catch(err => {
       return err; 
     });
@@ -546,7 +589,7 @@ module.exports = class Receive {
 
   backendPost(url, payload, token) {
     return new Promise((resolve, reject) => {
-      request.post(url, payload, {
+      axios.post(url, payload, {
         observe: 'response',
         headers: {
           'Accept': 'application/json',
