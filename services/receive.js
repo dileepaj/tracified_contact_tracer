@@ -108,7 +108,15 @@ module.exports = class Receive {
     return BasicUser.findOne({PSID: this.user.psid}).then((basicUser) => {
       if (message.includes("start over")) {
         response = Response.genNuxMessage(this.user)
-        // TODO Repeat code to clear db
+        // Repeat code to clear db
+        BasicUser.findOneAndUpdate({ PSID: this.user.psid }, {
+          lastAnsweredTimestamp: undefined,
+          answers: undefined
+        }).then((res) => {
+          console.log("Old answers removed from DB for PSID  ", this.webhookEvent.sender.id)
+        }).catch((err) => {
+          console.log(err, " PSID ", this.webhookEvent.sender.id)
+        });
       } else if (!basicUser.answers || basicUser.answers.length === 0) {
         questionOne = response;
         BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
