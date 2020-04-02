@@ -20,10 +20,13 @@ const express = require("express"),
 	User = require("./services/user"),
 	config = require("./services/config"),
 	i18n = require("./i18n.config"),
+	axios = require('axios'),
 	app = express();
 
 const mongoose = require("mongoose");
 const AdminUser = require("./db/adminUserSchema");
+
+const jwt = require('jsonwebtoken');
 
 var users = {};
 
@@ -96,18 +99,98 @@ mongoose.Promise = global.Promise; // Use global promises for mongoose
 
 //add admin to db
 app.post("/registerAdmin", (req, res) => {
-	AdminUser.create({
-		username: req.body.admin.username,
-		password: req.body.admin.password,
-		tenantId: req.body.admin.tenantId,
-		token: req.body.admin.token
+	// TODD repopulate workflows
+	let registeredItems;
+	const decodedToken = jwt.decode(req.body.admin.token);
+	const itemPayload = [{
+		Item: "Employees",
+		Stages: [
+			"100",
+			"101",
+			"102"
+		],
+		TenantID: req.body.admin.tenantId
+	}];
+	decodedToken["permissions"] ={
+		"0": [
+			"12",
+		]
+	};
+	delete decodedToken.exp;
+	const encodedTokenRepopulate = jwt.sign(decodedToken, process.env.SECRET_TOKEN, { expiresIn: '1h' });
+	axios.get("https://api.tracified.com/api/v2/config/workflow/repopulate", {
+		observe: 'response',
+		headers: {
+			'Accept': 'application/json',
+			'Content-Type': 'Application/json',
+			'Authorization': 'Bearer ' + encodedTokenRepopulate,
+		}
+	}).then(() => {
+		console.log("Worflows repopulated in BE");
+	}).catch((err) => {
+		console.log("Workflow repopulation failed in BE", err);
 	})
-		.then((data) => {
+	axios.post("https://admin.api.tracified.com/api/tracifieditem", itemPayload, {
+		observe: 'response',
+		headers: {
+			'Accept': 'application/json',
+			'Content-Type': 'Application/json',
+			'Authorization': 'Bearer ' + req.body.admin.token
+		}
+	}).then((response) => {
+		registeredItems = response.data;
+		decodedToken["permissions"] = {
+			"0": [
+				"16",
+				"7",
+				"8",
+				"9",
+				"14",
+				"10"
+			],
+			"100": [
+				"15",
+				"1",
+				"3",
+				"4",
+				"5",
+				"6",
+				"2"
+			],
+			"101": [
+				"1",
+				"3",
+				"4",
+				"5",
+				"2",
+				"6"
+			],
+			"102": [
+				"1",
+				"2",
+				"3",
+				"4",
+				"5",
+				"6"
+			]
+		};
+		// Updating permissions and expiry
+		delete decodedToken.exp;
+		const encodedToken = jwt.sign(decodedToken, process.env.SECRET_TOKEN, { expiresIn: '720h' });
+		AdminUser.create({
+			username: req.body.admin.username,
+			password: req.body.admin.password,
+			tenantId: req.body.admin.tenantId,
+			token: encodedToken,
+			item: registeredItems[0],
+		}).then((data) => {
 			res.status(200).send("Admin added successfully");
-		})
-		.catch((error) => {
+		}).catch((error) => {
 			res.status(403).send("Admin not added." + error);
 		});
+	}).catch((error) => {
+		console.log(error);
+	});
 });
 
 // For admin registration
