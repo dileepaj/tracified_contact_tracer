@@ -230,11 +230,11 @@ module.exports = class Receive {
     } else if (payload.toUpperCase().includes("RATING")) {
       BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
         lastAnsweredTimestamp: Date.now(),
-        $push: {
-          answers: {
+        $set: {
+          answers: [{
             question: "What crowded places have you been to since the Covid-19 epidemic outbreak?",
             answer: this.webhookEvent.message.text
-          }
+          }]
         }
       }).then((res) => {
         console.log("1st answer saved for PSID ", this.webhookEvent.sender.id)
@@ -264,7 +264,7 @@ module.exports = class Receive {
         lastAnsweredTimestamp: Date.now(),
         $push: {
           answers: {
-            question: "What type of contact with the person who had been affected with Covid-19 do you think you had in the event.",
+            question: "What type of contact with the person who had been affected with Covid-19 do you think you had in the event?",
             answer: this.webhookEvent.message.text
           }
         }
