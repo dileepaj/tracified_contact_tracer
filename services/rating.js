@@ -7,8 +7,11 @@ const Response = require("./response"),
 
 module.exports = class Rating {
   static handlePayload(payload) {
-    let response;
-    response = Response.genQuickReply(i18n.__("Please select the date of contact"), [
+    let response = [];
+    response.push({
+      text: `Select from the options below`,
+    });
+    response.push(Response.genQuickReply(i18n.__("Please select the date of contact"), [
         {
           title: i18n.__("Today"),
           payload: "QUESTION"
@@ -29,7 +32,7 @@ module.exports = class Rating {
           title: i18n.__("A week ago"),
           payload: "QUESTION"
         }
-    ]);
+    ]));
     return response;
   }
 };
