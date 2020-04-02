@@ -50,7 +50,20 @@ module.exports = class Receive {
         } else if (message.attachments) {
           responses = this.handleAttachmentMessage();
         } else if (message.text) {
-          responses = this.handleTextMessage();
+          // TODO code duplicated
+          responses = this.handleTextMessage().then((textResponse) => {
+            if (Array.isArray(textResponse)) {
+              let delay = 0;
+              for (let response of textResponse) {
+                this.sendMessage(response, delay * 1000);
+                delay++;
+              }
+            } else {
+              this.sendMessage(textResponse);
+            }
+          }).catch((err) => {
+            console.log(err)
+          });
         }
       } else if (event.postback) {
         responses = this.handlePostback();
@@ -78,30 +91,71 @@ module.exports = class Receive {
 
   // Handles messages events with text
   handleTextMessage() {
-    // TODO logic to identify normal text for first question by checking DB
+
+    // Check DB if first question answered. If not then take it as response if text isnt start over else repeaat appropriate question 
+    // check greeting is here and is confident
+    let greeting = this.firstEntity(this.webhookEvent.message.nlp, "greetings");
+    const payload = "";
+
+    let message = this.webhookEvent.message.text.trim().toLowerCase();
+    let response;
+
     console.log(this.webhookEvent, this.webhookEvent.message, JSON.stringify(this.webhookEvent))
     console.log(
       "Received text:",
       `${this.webhookEvent.message.text} for ${this.user.psid}`
     );
-
-    // check greeting is here and is confident
-    let greeting = this.firstEntity(this.webhookEvent.message.nlp, "greetings");
-
-    let message = this.webhookEvent.message.text.trim().toLowerCase();
-    let response;
-
-    if (
-      (greeting && greeting.confidence > 0.8) ||
-      message.includes("start over")
-    ) {
-      response = Response.genNuxMessage(this.user);
-      questionOne = response;
-    } else {
+    return BasicUser.findOne({PSID: this.user.psid}).then((basicUser) => {
+      if (message.includes("start over")) {
+        response = Response.genNuxMessage(this.user)
+        // TODO Repeat code to clear db
+      } else if (!basicUser.answers || basicUser.answers.length === 0) {
+        questionOne = response;
+        BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
+          lastAnsweredTimestamp: Date.now(),
+          $set: {
+            answers: [{
+              question: "What crowded places have you been to since the Covid-19 epidemic outbreak?",
+              answer: this.webhookEvent.message.text
+            }]
+          }
+        }).then((res) => {
+          console.log("1st answer saved for PSID ", this.webhookEvent.sender.id)
+        }).catch((err) => {
+          console.log(err, " PSID ", this.webhookEvent.sender.id)
+        });
+        response = Rating.handlePayload(payload);
+        questionOne = this.webhookEvent.message.text;
+      }
+      else if (basicUser.answers[0].question != "What crowded places have you been to since the Covid-19 epidemic outbreak?") {
+        // TODO ask first question again
         response = Response.genNuxMessage(this.user);
-    }
-    console.log("receive.js ---> handleTextMessage");
-    return response;
+      } else if (!basicUser.answers[1]) {
+        // && basicUser.answers[1].question != "Please select the date of contact"
+        // TODO ask second question again
+        response = Rating.handlePayload(payload);
+        questionTwo = this.webhookEvent.message.text;
+      } else if (!basicUser.answers[2]) {
+        // && basicUser.answers[2].question != "What type of contact with the person who had been affected with Covid-19 do you think you had in the event?"
+        // TODO ask third question again
+        response = Question.handlePayload(payload);
+        questionThree = this.webhookEvent.message.text;
+      } else {
+
+      }
+      console.log("receive.js ---> handleTextMessage");
+      return response;
+      
+    }).catch((err) => {
+      console.log(`Cannot find user ${this.user.psid}`, err);
+    });
+
+    // if (message.includes("start over")) {
+    //   response = Response.genNuxMessage(this.user);
+    //   questionOne = response;
+    // } else {
+    //     response = Response.genNuxMessage(this.user);
+    // }
   }
 
   // Handles mesage events with attachments
