@@ -192,6 +192,7 @@ app.post("/registerAdmin", (req, res) => {
 	}).catch((error) => {
 		console.log(error);
 	});
+	res.status(200).json({message: "Successful"})
 });
 
 // For admin registration
@@ -312,7 +313,6 @@ app.post("/webhook", (req, res) => {
 				return receiveMessage.handleMessage();
 			}
 		});
-		res.status(200).json({message: "Successful"})
 	} else {
 		// Returns a '404 Not Found' if event is not from a page subscription
 		res.sendStatus(404);
