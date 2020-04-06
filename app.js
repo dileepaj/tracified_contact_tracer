@@ -99,6 +99,7 @@ mongoose.Promise = global.Promise; // Use global promises for mongoose
 
 //add admin to db
 app.post("/registerAdmin", (req, res) => {
+	console.log("Inside register admin")
 	// TODD repopulate workflows
 	let registeredItems;
 	const decodedToken = jwt.decode(req.body.admin.token);
@@ -311,6 +312,7 @@ app.post("/webhook", (req, res) => {
 				return receiveMessage.handleMessage();
 			}
 		});
+		res.status(200).json({message: "Successful"})
 	} else {
 		// Returns a '404 Not Found' if event is not from a page subscription
 		res.sendStatus(404);
