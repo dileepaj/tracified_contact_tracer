@@ -139,6 +139,7 @@ app.post("/registerAdmin", (req, res) => {
 			'Authorization': 'Bearer ' + req.body.admin.token
 		}
 	}).then((response) => {
+		console.log("Tracified item created");
 		registeredItems = response.data;
 		decodedToken["permissions"] = {
 			"0": [
@@ -190,9 +191,9 @@ app.post("/registerAdmin", (req, res) => {
 			res.status(403).send("Admin not added." + error);
 		});
 	}).catch((error) => {
+		console.log("Tracified item creation failed");
 		console.log(error);
 	});
-	res.status(200).json({message: "Successful"})
 });
 
 // For admin registration
