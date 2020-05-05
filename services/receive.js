@@ -106,12 +106,13 @@ module.exports = class Receive {
       `${this.webhookEvent.message.text} for ${this.user.psid}`
     );
     return BasicUser.findOne({PSID: this.user.psid}).then((basicUser) => {
-      if (message.includes("start over")) {
+      if (message.includes("start over") || basicUser.startOverInitiated === false) {
         response = Response.genNuxMessage(this.user)
         // Repeat code to clear db
         BasicUser.findOneAndUpdate({ PSID: this.user.psid }, {
           lastAnsweredTimestamp: undefined,
-          answers: undefined
+          answers: undefined,
+          startOverInitiated: true,
         }).then((res) => {
           console.log("Old answers removed from DB for PSID  ", this.webhookEvent.sender.id)
         }).catch((err) => {
@@ -374,7 +375,8 @@ module.exports = class Receive {
             console.log("Found previous answers in DB for PSID ", this.webhookEvent.sender.id)
             BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
               lastAnsweredTimestamp: undefined,
-              answers: undefined
+              answers: undefined,
+              startOverInitiated: false,
             }).then((res) => {
               console.log("Old answers removed from DB for PSID  ", this.webhookEvent.sender.id)
             }).catch((err) => {

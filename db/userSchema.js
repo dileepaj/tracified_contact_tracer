@@ -10,6 +10,10 @@ const user = new Schema({
     lastLoggedIn: Date,
     lastAnsweredTimestamp: Date,
     answers: mongoose.Schema.Types.Mixed,
+    startOverInitiated: {
+        default: true,
+        type: Boolean,
+    },
 });
 
 const UserSchema = mongoose.model("User", user);
