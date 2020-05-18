@@ -288,12 +288,13 @@ module.exports = class Receive {
         const originalTDP = {
           "haveyouattendedanyeventswhereyouhavebeenincontactwithanyonesufferingfromCovid-19": res.answers[0].answer,
           "pleaseselectthedateofcontact": res.answers[1].answer,
-          "whattypeofcontactwiththepersonwhohadbeenaffectedwithCovid-19doyouthinkyouhadintheevent": this.webhookEvent.message.text
+          "whattypeofcontactwiththepersonwhohadbeenaffectedwithCovid-19doyouthinkyouhadintheevent": this.webhookEvent.message.text,
+          "PSID": this.webhookEvent.sender.id,
         }
 
         const identifier = {
           type: "barcode",
-          id: this.webhookEvent.sender.id
+          id: res.firstName + " " + res.lastName,
         }
 
         let identifierBase64 = Buffer.from(JSON.stringify(identifier)).toString("base64");
@@ -448,27 +449,34 @@ module.exports = class Receive {
       
     } else if (payload.includes("TENANTID")) {
       const tenantID = payload.substring(payload.indexOf('-') + 1); 
-      let batchId = this.webhookEvent.sender.id; 
-      
-      //saving tenant ID with PSID
-      BasicUser.findOne({PSID: this.webhookEvent.sender.id}).then((res) => {
-        if (res) {
-          console.log(this.webhookEvent.sender.id, " already exists in DB no need to save.")
-        } else {
-          console.log(this.webhookEvent.sender.id, " does not exists in DB need to save.")
-          BasicUser.create({
-            PSID: this.webhookEvent.sender.id,
-            tenantId: tenantID,
-            lastLoggedIn: Date.now(),
-          }).then((res) => {
-            console.log(this.webhookEvent.sender.id, " PSID user saved in DB.")
-          }).catch((err) => {
-            console.log(err, " PSID user details failed to save in DB.")
-          });
-        }
-      }).catch((err) => {
-        console.log(err)
-      });
+      let userPSID = this.webhookEvent.sender.id; 
+      GraphAPi.getUserProfile(userPSID).then((userProfile) => {
+        console.log(userProfile)
+        //saving tenant ID with PSID
+        BasicUser.findOne({PSID: this.webhookEvent.sender.id}).then((res) => {
+          if (res) {
+            console.log(this.webhookEvent.sender.id, " already exists in DB no need to save.")
+          } else {
+            console.log(this.webhookEvent.sender.id, " does not exists in DB need to save.")
+            BasicUser.create({
+              PSID: this.webhookEvent.sender.id,
+              tenantId: tenantID,
+              lastLoggedIn: Date.now(),
+              firstName: userProfile.firstName,
+              lastName: userProfile.lastName,
+            }).then((res) => {
+              console.log(this.webhookEvent.sender.id, " PSID user saved in DB.")
+            }).catch((err) => {
+              console.log(err, " PSID user details failed to save in DB.")
+            });
+          }
+        }).catch((err) => {
+          console.log(err)
+        });
+      }).catch((error) => {
+        // The profile is unavailable
+        console.log("Profile is unavailable:", error);
+      })
       response = [];
       response.push({
         text: `Hi ` + this.user.firstName + `!`,
