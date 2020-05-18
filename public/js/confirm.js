@@ -261,7 +261,10 @@ function revertConfError() {
 }
 
 function redirectToFB() {
-	window.location.replace(redirecLink);
+	window.open(
+		redirecLink,
+		'_blank' // <- This is what makes it open in a new window.
+	  );
 }
 
 function saveAdmin(recToken) {
