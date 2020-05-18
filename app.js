@@ -186,8 +186,10 @@ app.post("/registerAdmin", (req, res) => {
 			token: encodedToken,
 			item: registeredItems[0],
 		}).then((data) => {
+			console.log("Admin added successfully")
 			res.status(200).send("Admin added successfully");
 		}).catch((error) => {
+			console.log("Admin not added.", error)
 			res.status(403).send("Admin not added." + error);
 		});
 	}).catch((error) => {
