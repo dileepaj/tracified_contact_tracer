@@ -20,11 +20,11 @@ const express = require("express"),
 	User = require("./services/user"),
 	config = require("./services/config"),
 	i18n = require("./i18n.config"),
-	axios = require('axios'),
 	app = express();
 
 const mongoose = require("mongoose");
-const AdminUser = require("./db/adminUserSchema");
+const AdminUserService = require("./services/admin-user-service");
+const TracifiedService = require("./services/tracified-service");
 
 const jwt = require('jsonwebtoken');
 
@@ -101,97 +101,15 @@ mongoose.Promise = global.Promise; // Use global promises for mongoose
 app.post("/registerAdmin", (req, res) => {
 	console.log("Inside register admin")
 	// TODD repopulate workflows
-	let registeredItems;
 	const decodedToken = jwt.decode(req.body.admin.token);
-	const itemPayload = [{
-		Item: "Employees",
-		Stages: [
-			"100",
-			"101",
-			"102"
-		],
-		TenantID: req.body.admin.tenantId
-	}];
-	decodedToken["permissions"] ={
-		"0": [
-			"12",
-		]
-	};
-	delete decodedToken.exp;
-	const encodedTokenRepopulate = jwt.sign(decodedToken, process.env.SECRET_TOKEN, { expiresIn: '1h' });
-	axios.get("https://api.tracified.com/api/v2/config/workflow/repopulate", {
-		observe: 'response',
-		headers: {
-			'Accept': 'application/json',
-			'Content-Type': 'Application/json',
-			'Authorization': 'Bearer ' + encodedTokenRepopulate,
-		}
-	}).then(() => {
-		console.log("Worflows repopulated in BE");
-	}).catch((err) => {
-		console.log("Workflow repopulation failed in BE", err);
-	})
-	axios.post("https://admin.api.tracified.com/api/tracifieditem", itemPayload, {
-		observe: 'response',
-		headers: {
-			'Accept': 'application/json',
-			'Content-Type': 'Application/json',
-			'Authorization': 'Bearer ' + req.body.admin.token
-		}
-	}).then((response) => {
-		console.log("Tracified item created");
-		registeredItems = response.data;
-		decodedToken["permissions"] = {
-			"0": [
-				"16",
-				"7",
-				"8",
-				"9",
-				"14",
-				"10"
-			],
-			"100": [
-				"15",
-				"1",
-				"3",
-				"4",
-				"5",
-				"6",
-				"2"
-			],
-			"101": [
-				"1",
-				"3",
-				"4",
-				"5",
-				"2",
-				"6"
-			],
-			"102": [
-				"1",
-				"2",
-				"3",
-				"4",
-				"5",
-				"6"
-			]
-		};
+	TracifiedService.repopulateWorkflows(decodedToken);
+	TracifiedService.addEmployeeAsItem(req.body.admin.token, req.body.admin.tenantId).then((registeredItems) => {
 		// Updating permissions and expiry
-		delete decodedToken.exp;
-		const encodedToken = jwt.sign(decodedToken, process.env.SECRET_TOKEN, { expiresIn: '720h' });
-		AdminUser.create({
-			username: req.body.admin.username,
-			password: req.body.admin.password,
-			tenantId: req.body.admin.tenantId,
-			token: encodedToken,
-			item: registeredItems[0],
-		}).then((data) => {
-			console.log("Admin added successfully")
+		AdminUserService.createUser(decodedToken, req.body.admin.username, req.body.admin.password, req.body.admin.tenantId, registeredItems).then((admin) => {
 			res.status(200).send("Admin added successfully");
-		}).catch((error) => {
-			console.log("Admin not added.", error)
-			res.status(403).send("Admin not added." + error);
-		});
+		}).catch((err) => {
+			res.status(403).send("Admin not added." + err);
+		})
 	}).catch((error) => {
 		console.log("Tracified item creation failed");
 		console.log(error);

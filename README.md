@@ -1,2 +1,2 @@
-# tracified_contact_tracer
+# Tracified Contact Tracer
 Covid 19 contact tracer messenger bot by Tracified

@@ -10,24 +10,15 @@
 
 "use strict";
 
-const Curation = require("./curation"),
-  Order = require("./order"),
-  Response = require("./response"),
-  Care = require("./care"),
-  Survey = require("./survey"),
+const Response = require("./response"),
   Question = require("./question"),
   Rating = require("./rating"),
   GraphAPi = require("./graph-api"),
   BasicUser = require("../db/userSchema"),
-  AdminUser = require("../db/adminUserSchema"),
-  request = require('request'),
-  axios = require('axios'),
+  BasicUserService = require("./basic-user-service"),
+  AdminUserService = require("./admin-user-service"),
+  QuestionList = require('./../question-list'),
   i18n = require("../i18n.config");
-  let questionOne
-  let questionTwo 
-  let questionThree
-
-const jwt = require('jsonwebtoken');
 
 module.exports = class Receive {
   constructor(user, webhookEvent) {
@@ -105,66 +96,53 @@ module.exports = class Receive {
       "Received text:",
       `${this.webhookEvent.message.text} for ${this.user.psid}`
     );
-    return BasicUser.findOne({PSID: this.user.psid}).then((basicUser) => {
-      if (message.includes("start over") || basicUser.startOverInitiated === false) {
-        response = Response.genNuxMessage(this.user)
-        // Repeat code to clear db
-        BasicUser.findOneAndUpdate({ PSID: this.user.psid }, {
-          lastAnsweredTimestamp: undefined,
-          answers: undefined,
-          startOverInitiated: true,
-        }).then((res) => {
-          console.log("Old answers removed from DB for PSID  ", this.webhookEvent.sender.id)
-        }).catch((err) => {
-          console.log(err, " PSID ", this.webhookEvent.sender.id)
-        });
+    return BasicUser.findOne({ PSID: this.user.psid }).then((basicUser) => {
+      // TODO check if user exists or not. If not tell him to go back and come again as user not registered properly
+      if (message.includes("start over")) {
+        response = Question.question1(this.user)
+        BasicUserService.clearAnswers(this.user.psid);
+        BasicUserService.setStartOverInitiated(this.user.psid, true);
+      } else if (basicUser.startOverInitiated === false && !basicUser.answers) {
+        response = {
+          text: `If you wish to redo the survey, please type "start over" in text box below`
+        };
       } else if (!basicUser.answers || basicUser.answers.length === 0) {
-        questionOne = response;
-        BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
-          lastAnsweredTimestamp: Date.now(),
-          $set: {
-            answers: [{
-              question: "What crowded places have you been to since the Covid-19 epidemic outbreak?",
-              answer: this.webhookEvent.message.text
-            }]
-          }
-        }).then((res) => {
-          console.log("1st answer saved for PSID ", this.webhookEvent.sender.id)
+        BasicUserService.updateUserQuestion(
+          this.webhookEvent.sender.id,
+          QuestionList.QUESTION1,
+          this.webhookEvent.message.text,
+        ).then((basicUser) => {
+          console.log("1st answer saved for PSID ", basicUser.PSID)
         }).catch((err) => {
           console.log(err, " PSID ", this.webhookEvent.sender.id)
         });
-        response = Rating.handlePayload(payload);
-        questionOne = this.webhookEvent.message.text;
+        response = Question.question2(payload);
       }
-      else if (basicUser.answers[0].question != "What crowded places have you been to since the Covid-19 epidemic outbreak?") {
+      else if (basicUser.answers[0].question != QuestionList.QUESTION1) {
         // TODO ask first question again
-        response = Response.genNuxMessage(this.user);
+        response = Question.question1(this.user);
       } else if (!basicUser.answers[1]) {
-        // && basicUser.answers[1].question != "Please select the date of contact"
-        // TODO ask second question again
-        response = Rating.handlePayload(payload);
-        questionTwo = this.webhookEvent.message.text;
+        response = Question.question2(payload);
       } else if (!basicUser.answers[2]) {
-        // && basicUser.answers[2].question != "What type of contact with the person who had been affected with Covid-19 do you think you had in the event?"
-        // TODO ask third question again
-        response = Question.handlePayload(payload);
-        questionThree = this.webhookEvent.message.text;
+        response = Question.question3(payload);
       } else {
-
+        // TODO this means all questions are there but it hasn't been saved
+        BasicUserService.sendDataToTracified(this.webhookEvent.sender.id, null).then(() => {
+          console.log("Data sent to Tracified");
+          response = {
+            text: `Data saved successfully!`
+          };
+        }).catch((err) => {
+          console.log("Something went wrong, data did not go to Tracified. PSID ", this.webhookEvent.sender.id, err)
+        })
       }
       console.log("receive.js ---> handleTextMessage");
       return response;
-      
+
     }).catch((err) => {
       console.log(`Cannot find user ${this.user.psid}`, err);
     });
 
-    // if (message.includes("start over")) {
-    //   response = Response.genNuxMessage(this.user);
-    //   questionOne = response;
-    // } else {
-    //     response = Response.genNuxMessage(this.user);
-    // }
   }
 
   // Handles mesage events with attachments
@@ -233,166 +211,41 @@ module.exports = class Receive {
       payload === "DEVDOCS" ||
       payload === "GITHUB"
     ) {
-    //Where questions are being called from
-    //First question starts here
-      response = Response.genNuxMessage(this.user);
-    } else if (payload.toUpperCase().includes("RATING")) {
-      BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
-        lastAnsweredTimestamp: Date.now(),
-        $set: {
-          answers: [{
-            question: "What crowded places have you been to since the Covid-19 epidemic outbreak?",
-            answer: this.webhookEvent.message.text
-          }]
-        }
-      }).then((res) => {
-        console.log("1st answer saved for PSID ", this.webhookEvent.sender.id)
+      //Where questions are being called from
+      //First question starts here
+      response = Question.question1(this.user);
+    } else if (payload.toUpperCase().includes("QUESTION1")) {
+      BasicUserService.updateUserQuestion(
+        this.webhookEvent.sender.id,
+        QuestionList.QUESTION1,
+        this.webhookEvent.message.text,
+      ).then((basicUser) => {
+        console.log("1st answer saved for PSID ", basicUser.PSID)
       }).catch((err) => {
         console.log(err, " PSID ", this.webhookEvent.sender.id)
       });
-      response = Rating.handlePayload(payload);
-      questionOne = this.webhookEvent.message.text;     
-    } else if (payload.toUpperCase().includes("QUESTION")) {
-      BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
-        lastAnsweredTimestamp: Date.now(),
-        $push: {
-          answers: {
-            question: "Please select the date of contact",
-            answer: this.webhookEvent.message.text
-          }
-        }
-      }).then((res) => {
-        console.log("2nd answer saved for PSID ", this.webhookEvent.sender.id)
+      response = Question.question2(payload);
+    } else if (payload.toUpperCase().includes("QUESTION2")) {
+      BasicUserService.updateUserQuestion(this.webhookEvent.sender.id, QuestionList.QUESTION2,
+        this.webhookEvent.message.text, true).then((basicUser) => {
+        console.log("2nd answer saved for PSID ", basicUser.PSID)
       }).catch((err) => {
         console.log(err, " PSID ", this.webhookEvent.sender.id)
       });
-      response = Question.handlePayload(payload);
-      questionTwo = this.webhookEvent.message.text;     
+      response = Question.question3(payload);
     } else if (payload.toUpperCase().includes("END")) {
-      BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
-        lastAnsweredTimestamp: Date.now(),
-        $push: {
-          answers: {
-            question: "What type of contact with the person who had been affected with Covid-19 do you think you had in the event?",
-            answer: this.webhookEvent.message.text
-          }
-        }
-      }).then((res) => {
-        console.log("3rd answer saved for PSID ", this.webhookEvent.sender.id)
+      BasicUserService.updateUserQuestion( this.webhookEvent.sender.id, QuestionList.QUESTION3,
+        this.webhookEvent.message.text, true).then((basicUser) => {
+        console.log("3rd answer saved for PSID ", basicUser.PSID)
       }).catch((err) => {
         console.log(err, " PSID ", this.webhookEvent.sender.id)
       });
-      response = Question.handlePayload(payload);
-      questionThree = this.webhookEvent.message.text;
-      BasicUser.findOne({ PSID: this.webhookEvent.sender.id }).then((res) => {
-        const originalTDP = {
-          "haveyouattendedanyeventswhereyouhavebeenincontactwithanyonesufferingfromCovid-19": res.answers[0].answer,
-          "pleaseselectthedateofcontact": res.answers[1].answer,
-          "whattypeofcontactwiththepersonwhohadbeenaffectedwithCovid-19doyouthinkyouhadintheevent": this.webhookEvent.message.text,
-          "PSID": this.webhookEvent.sender.id,
-        }
 
-        const identifier = {
-          type: "barcode",
-          id: res.firstName + " " + res.lastName,
-        }
-
-        let identifierBase64 = Buffer.from(JSON.stringify(identifier)).toString("base64");
-        AdminUser.findOne({tenantId: res.tenantId}).then((adminUser) => {
-          this.getStatus(adminUser.token, identifierBase64).then((status) => {
-            const datetime = new Date();
-            const tdp = {
-              txns: [
-                {
-                  xdr: "sample-xdr",
-                  identifier: identifierBase64,
-                }
-              ],
-              data: {
-                header: {
-                  stageID: "100",
-                  timestamp: datetime.toISOString(),
-                  identifiers: [
-                    identifierBase64
-                  ],
-                  item: {
-                    itemID: adminUser.item.itemID,
-                    itemName: adminUser.item.itemName
-                  },
-                  workflowRevision: 0
-                },
-                data: originalTDP
-              },
-              publicKey: [
-                {
-                  publicKey: 'sdasda',
-                  role: 'FieldOfficer'
-                },
-                {
-                  publicKey: 'asdasfafa',
-                  role: 'FieldOfficerApp'
-                }
-              ]
-            };
-            if(!status[0].status) {
-              const genesisPayload = {
-                "data": {
-                  "header": {
-                    "item": {
-                      "itemID": adminUser.item.itemID,
-                      "itemName": adminUser.item.itemName,
-                    },
-                    "stageID": "100",
-                    "identifiers": [
-                      identifierBase64,
-                    ]
-                  }
-                },
-                "txns": [
-                  {
-                    "xdr": "sample-xdr",
-                    "identifier": identifierBase64
-                  }
-                ]
-              }
-              this.genesis(genesisPayload, adminUser.token).then((genesisResult) => {
-                console.log("genesis carried out successfully ")
-                this.postDataPacket(tdp, adminUser.token).then((tdpResult) => {
-                  console.log("Saved TDP successfully", tdpResult);
-                }).catch((err) => {
-                  console.log("Saving TDP failed", tdpResult);
-                });
-              }).catch((err) => {
-                console.log("Gensis failed for ", identifierBase64, err);
-              });
-            } else {
-              tdp.data.header.stageID = status[0].stage;
-              this.postDataPacket(tdp, adminUser.token).then((tdpResult) => {
-                console.log("Saved TDP successfully", tdpResult);
-              }).catch((err) => {
-                console.log("Saving TDP failed", tdpResult);
-              });
-            }
-            console.log("Found previous answers in DB for PSID ", this.webhookEvent.sender.id)
-            BasicUser.findOneAndUpdate({ PSID: this.webhookEvent.sender.id }, {
-              lastAnsweredTimestamp: undefined,
-              answers: undefined,
-              startOverInitiated: false,
-            }).then((res) => {
-              console.log("Old answers removed from DB for PSID  ", this.webhookEvent.sender.id)
-            }).catch((err) => {
-              console.log(err, " PSID ", this.webhookEvent.sender.id)
-            });
-          }).catch((err) => {
-            console.log(err);
-          })
-        }).catch((err) => {
-          console.log(err, " admin user not present for tenant " + res.tenantId);
-        });
+      BasicUserService.sendDataToTracified(this.webhookEvent.sender.id, this.webhookEvent.message.text).then(() => {
+        console.log("Data sent to Tracified")
       }).catch((err) => {
-        console.log(err, " PSID ", this.webhookEvent.sender.id)
-      });
-      
+        console.log("Something went wrong, data did not go to Tracified. PSID ", this.webhookEvent.sender.id, err)
+      })
 
       response = [];
       response.push({
@@ -400,35 +253,27 @@ module.exports = class Receive {
       });
     } else if (payload.includes("TOKEN")) {
       const extractedToken = payload.substring(payload.indexOf('-') + 1);
-      if(extractedToken) {
+      console.log("got a token request ", extractedToken);
+      if (extractedToken) {
         // TODO Validate token
-        let decode = jwt.decode(extractedToken);
-        let tenantId;
-        // if(decode.exp > Date.now()) {
-          tenantId = decode.tenantID;
-        // } else {
-        //   console.log("token expired");
-        // }        
-        AdminUser.findOneAndUpdate({tenantId: tenantId}, {
-          PSID: this.webhookEvent.sender.id,
-        }).then((res) => {
-          console.log("admin user for tenant ", tenantId, " attached to PSID ", this.webhookEvent.sender.id)
+        AdminUserService.updatePSID(extractedToken, this.webhookEvent.sender.id).then((updatedAdminUser) => {
+          console.log("admin user attached to PSID ", updatedAdminUser.PSID)
+          response = [];
+          response.push({
+            text: this.user.firstName + ` You can simply forward the message that follows to your employees.`
+          });
+          response.push({
+            text: `Hi! The company has partnered with Tracified Contact Tracer to help fight against the COVID-19 virus. Please follow this link and do the needful https://m.me/101757184804637?ref=TENANTID-` + updatedAdminUser.tenantId + `. The company look forwards to your full co-operation. Thank you.`,
+          });
         }).catch((err) => {
-          console.log("admin user for tenant ", tenantId, " failed to attach PSID ", this.webhookEvent.sender.id)
-        });
-        response = [];
-        response.push({
-          text: this.user.firstName + ` You can simply forward the message that follows to your employees.`
-        });
-        response.push({
-          text: `Hi! The company has partnered with Tracified Contact Tracer to help fight against the COVID-19 virus. Please follow this link and do the needful https://m.me/101757184804637?ref=TENANTID-` + tenantId +`. The company look forwards to your full co-operation. Thank you.`,
+          // TODO add message to try again
+          console.log("admin user with token ", extractedToken, " failed to attach PSID ", this.webhookEvent.sender.id, err)
         });
       } else {
         response.push({
           text: `Unauthorised User`,
         });
       }
-      console.log("got a token request");
       // response = [{
       //   attachment: {
       //     type: "template",
@@ -446,37 +291,18 @@ module.exports = class Receive {
       //     }
       //   }
       // }];
-      
+
     } else if (payload.includes("TENANTID")) {
-      const tenantID = payload.substring(payload.indexOf('-') + 1); 
-      let userPSID = this.webhookEvent.sender.id; 
+      const tenantID = payload.substring(payload.indexOf('-') + 1);
+      let userPSID = this.webhookEvent.sender.id;
       GraphAPi.getUserProfile(userPSID).then((userProfile) => {
         console.log(userProfile)
         //saving tenant ID with PSID
-        BasicUser.findOne({PSID: this.webhookEvent.sender.id}).then((res) => {
-          if (res) {
-            console.log(this.webhookEvent.sender.id, " already exists in DB no need to save.")
-          } else {
-            console.log(this.webhookEvent.sender.id, " does not exists in DB need to save.")
-            BasicUser.create({
-              PSID: this.webhookEvent.sender.id,
-              tenantId: tenantID,
-              lastLoggedIn: Date.now(),
-              firstName: userProfile.firstName,
-              lastName: userProfile.lastName,
-            }).then((res) => {
-              console.log(this.webhookEvent.sender.id, " PSID user saved in DB.")
-            }).catch((err) => {
-              console.log(err, " PSID user details failed to save in DB.")
-            });
-          }
-        }).catch((err) => {
-          console.log(err)
-        });
+        BasicUserService.createUser(this.webhookEvent.sender.id, tenantID, userProfile.firstName, userProfile.lastName);
       }).catch((error) => {
         // The profile is unavailable
         console.log("Profile is unavailable:", error);
-      })
+      });
       response = [];
       response.push({
         text: `Hi ` + this.user.firstName + `!`,
@@ -484,7 +310,7 @@ module.exports = class Receive {
       response.push({
         text: `Welcome to Tracified Contact Tracer. We will now ask you a some questions. Please answer honestly to ensure the safety of yourself and everyone around you.`
       });
-      response.push(Response.genNuxMessage(this.user));
+      response.push(Question.question1(this.user));
     }
     else {
       response = {
@@ -495,7 +321,7 @@ module.exports = class Receive {
     return response;
   }
 
-  handlePrivateReply(type,object_id) {
+  handlePrivateReply(type, object_id) {
     let welcomeMessage = i18n.__("get_started.welcome") + " " +
       i18n.__("get_started.guidance") + ". " +
       i18n.__("get_started.help");
@@ -559,72 +385,6 @@ module.exports = class Receive {
 
   firstEntity(nlp, name) {
     return nlp && nlp.entities && nlp.entities[name] && nlp.entities[name][0];
-  }
-  
-  getStatus(token, identifier) {
-    return this.adminGet('https://api.tracified.com/api/v2/identifiers/status/' + identifier, token).then((res) => {
-      return res.data;
-    }).catch(err => {
-      return err; 
-    });
-  }
-
-  genesis(tdp, token) {
-    return this.backendPost('https://api.tracified.com/api/v2/traceabilityProfiles/genesis', tdp, token).then((res) => {
-      return res.data;
-    }).catch(err => {
-      return err; 
-    });
-  }
-
-  postDataPacket(tdp, token) {
-    return this.backendPost('https://api.tracified.com/api/v2/dataPackets', tdp, token).then((res) => {
-      return res.data;
-    }).catch(err => {
-      return err; 
-    });
-  }
-
-  adminGet(url, token) {
-    return new Promise((resolve, reject) => {
-      axios.get(url, {
-        observe: 'response',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'Application/json',
-          'Authorization': 'Bearer ' + token
-        }
-      })
-      .then(function (response) {
-        console.log(response);
-        resolve(response);
-      })
-      .catch(function (error) {
-        console.log(error);
-        reject(error);
-      });
-    });
-  }
-
-  backendPost(url, payload, token) {
-    return new Promise((resolve, reject) => {
-      axios.post(url, payload, {
-        observe: 'response',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'Application/json',
-          'Authorization': 'Bearer ' + token
-        }
-      }) 
-      .then(function (response) {
-        console.log(response);
-        resolve(response);
-      })
-      .catch(function (error) {
-        console.log(error);
-        reject(error);
-      });
-    });
   }
 
 };

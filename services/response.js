@@ -130,15 +130,15 @@ module.exports = class Response {
       response = Response.genQuickReply(i18n.__("What crowded places have you been to since the Covid-19 epidemic outbreak?"), [
           {
             title: i18n.__("Public Transport"),
-            payload: "RATING"
+            payload: "QUESTION1"
           },
           {
             title: i18n.__("Airport"),
-            payload: "RATING"
+            payload: "QUESTION1"
           },
           {
             title: i18n.__("Big Match"),
-            payload: "RATING"
+            payload: "QUESTION1"
           }
       ]);
       return response;
