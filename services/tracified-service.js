@@ -149,7 +149,6 @@ module.exports = class TracifiedService {
         }
       })
         .then(function (response) {
-          console.log(response);
           resolve(response);
         })
         .catch(function (error) {
@@ -170,7 +169,6 @@ module.exports = class TracifiedService {
         }
       })
         .then(function (response) {
-          console.log(response);
           resolve(response);
         })
         .catch(function (error) {
