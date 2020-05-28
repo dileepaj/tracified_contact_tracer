@@ -12,7 +12,6 @@
 
 const Response = require("./response"),
   Question = require("./question"),
-  Rating = require("./rating"),
   GraphAPi = require("./graph-api"),
   BasicUser = require("../db/userSchema"),
   BasicUserService = require("./basic-user-service"),
