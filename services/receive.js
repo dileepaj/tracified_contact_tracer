@@ -68,7 +68,22 @@ module.exports = class Receive {
       };
     }
 
-    if (Array.isArray(responses)) {
+    if (responses instanceof Promise) {
+      responses.then((actualResponses) => {
+        actualResponses
+        if (Array.isArray(actualResponses)) {
+          let delay = 0;
+          for (let response of actualResponses) {
+            this.sendMessage(response, delay * 1000);
+            delay++;
+          }
+        } else {
+          this.sendMessage(actualResponses);
+        }
+      }).catch((err) => {
+        console.log(err)
+      })
+    } else if (Array.isArray(responses)) {
       let delay = 0;
       for (let response of responses) {
         this.sendMessage(response, delay * 1000);
@@ -205,119 +220,127 @@ module.exports = class Receive {
     let response;
 
     // Set the response based on the payload
-    if (
-      payload.toUpperCase() === "GET_STARTED" ||
-      payload === "DEVDOCS" ||
-      payload === "GITHUB"
-    ) {
-      //Where questions are being called from
-      //First question starts here
-      response = Question.question1(this.user);
-    } else if (payload.toUpperCase().includes("QUESTION1")) {
-      BasicUserService.updateUserQuestion(
-        this.webhookEvent.sender.id,
-        QuestionList.QUESTION1,
-        this.webhookEvent.message.text,
-      ).then((basicUser) => {
-        console.log("1st answer saved for PSID ", basicUser.PSID)
-      }).catch((err) => {
-        console.log(err, " PSID ", this.webhookEvent.sender.id)
-      });
-      response = Question.question2(payload);
-    } else if (payload.toUpperCase().includes("QUESTION2")) {
-      BasicUserService.updateUserQuestion(this.webhookEvent.sender.id, QuestionList.QUESTION2,
-        this.webhookEvent.message.text, true).then((basicUser) => {
-        console.log("2nd answer saved for PSID ", basicUser.PSID)
-      }).catch((err) => {
-        console.log(err, " PSID ", this.webhookEvent.sender.id)
-      });
-      response = Question.question3(payload);
-    } else if (payload.toUpperCase().includes("END")) {
-      BasicUserService.updateUserQuestion( this.webhookEvent.sender.id, QuestionList.QUESTION3,
-        this.webhookEvent.message.text, true).then((basicUser) => {
-        console.log("3rd answer saved for PSID ", basicUser.PSID)
-      }).catch((err) => {
-        console.log(err, " PSID ", this.webhookEvent.sender.id)
-      });
-
-      BasicUserService.sendDataToTracified(this.webhookEvent.sender.id, this.webhookEvent.message.text).then(() => {
-        console.log("Data sent to Tracified")
-      }).catch((err) => {
-        console.log("Something went wrong, data did not go to Tracified. PSID ", this.webhookEvent.sender.id, err)
-      })
-
-      response = [];
-      response.push({
-        text: `Thank you for completing the survey. If you wish to redo the survey, please type "start over" in text box below`
-      });
-    } else if (payload.includes("TOKEN")) {
-      const extractedToken = payload.substring(payload.indexOf('-') + 1);
-      console.log("got a token request ", extractedToken);
-      if (extractedToken) {
-        // TODO Validate token
-        AdminUserService.updatePSID(extractedToken, this.webhookEvent.sender.id).then((updatedAdminUser) => {
-          console.log("admin user attached to PSID ", updatedAdminUser.PSID)
-          response = [];
-          response.push({
-            text: this.user.firstName + ` You can simply forward the message that follows to your employees.`
-          });
-          response.push({
-            text: `Hi! The company has partnered with Tracified Contact Tracer to help fight against the COVID-19 virus. Please follow this link and do the needful https://m.me/101757184804637?ref=TENANTID-` + updatedAdminUser.tenantId + `. The company look forwards to your full co-operation. Thank you.`,
-          });
+    return new Promise((resovle, reject) => {
+      if (
+        payload.toUpperCase() === "GET_STARTED" ||
+        payload === "DEVDOCS" ||
+        payload === "GITHUB"
+      ) {
+        //Where questions are being called from
+        //First question starts here
+        response = Question.question1(this.user);
+        resovle(response);
+      } else if (payload.toUpperCase().includes("QUESTION1")) {
+        BasicUserService.updateUserQuestion(
+          this.webhookEvent.sender.id,
+          QuestionList.QUESTION1,
+          this.webhookEvent.message.text,
+        ).then((basicUser) => {
+          console.log("1st answer saved for PSID ", basicUser.PSID)
         }).catch((err) => {
-          // TODO add message to try again
-          console.log("admin user with token ", extractedToken, " failed to attach PSID ", this.webhookEvent.sender.id, err)
+          console.log(err, " PSID ", this.webhookEvent.sender.id)
         });
-      } else {
+        response = Question.question2(payload);
+        resovle(response);
+      } else if (payload.toUpperCase().includes("QUESTION2")) {
+        BasicUserService.updateUserQuestion(this.webhookEvent.sender.id, QuestionList.QUESTION2,
+          this.webhookEvent.message.text, true).then((basicUser) => {
+          console.log("2nd answer saved for PSID ", basicUser.PSID)
+        }).catch((err) => {
+          console.log(err, " PSID ", this.webhookEvent.sender.id)
+        });
+        response = Question.question3(payload);
+        resovle(response);
+      } else if (payload.toUpperCase().includes("END")) {
+        BasicUserService.updateUserQuestion( this.webhookEvent.sender.id, QuestionList.QUESTION3,
+          this.webhookEvent.message.text, true).then((basicUser) => {
+          console.log("3rd answer saved for PSID ", basicUser.PSID)
+        }).catch((err) => {
+          console.log(err, " PSID ", this.webhookEvent.sender.id)
+        });
+  
+        BasicUserService.sendDataToTracified(this.webhookEvent.sender.id, this.webhookEvent.message.text).then(() => {
+          console.log("Data sent to Tracified")
+        }).catch((err) => {
+          console.log("Something went wrong, data did not go to Tracified. PSID ", this.webhookEvent.sender.id, err)
+        })
+  
+        response = [];
         response.push({
-          text: `Unauthorised User`,
+          text: `Thank you for completing the survey. If you wish to redo the survey, please type "start over" in text box below`
         });
+        resovle(response);
+      } else if (payload.includes("TOKEN")) {
+        const extractedToken = payload.substring(payload.indexOf('-') + 1);
+        console.log("got a token request ", extractedToken);
+        if (extractedToken) {
+          // TODO Validate token
+          AdminUserService.updatePSID(extractedToken, this.webhookEvent.sender.id).then((updatedAdminUser) => {
+            console.log("admin user attached to PSID ", updatedAdminUser.PSID)
+            response = [];
+            response.push({
+              text: this.user.firstName + ` You can simply forward the message that follows to your employees.`
+            });
+            response.push({
+              text: `Hi! The company has partnered with Tracified Contact Tracer to help fight against the COVID-19 virus. Please follow this link and do the needful https://m.me/101757184804637?ref=TENANTID-` + updatedAdminUser.tenantId + `. The company look forwards to your full co-operation. Thank you.`,
+            });
+            resovle(response);
+          }).catch((err) => {
+            // TODO add message to try again
+            console.log("admin user with token ", extractedToken, " failed to attach PSID ", this.webhookEvent.sender.id, err)
+          });
+        } else {
+          response.push({
+            text: `Unauthorised User`,
+          });
+          resovle(response);
+        }
+        // response = [{
+        //   attachment: {
+        //     type: "template",
+        //     payload: {
+        //       template_type: "button",
+        //       text: "Register for Tracified Contact Tracer! Click on the button below and share the page with your employees! 🔗🔗 Or simple copy this link and share it https://m.me/101757184804637?ref=TENANTID-asda",
+        //       buttons: [
+        //         {
+        //           type: "web_url",
+        //           url: "https://m.me/101757184804637?ref=TENANTID-asda",
+        //           title: "Tracified Contact Tracer",
+        //           webview_height_ratio: "tall"
+        //         }
+        //       ]
+        //     }
+        //   }
+        // }];
+  
+      } else if (payload.includes("TENANTID")) {
+        const tenantID = payload.substring(payload.indexOf('-') + 1);
+        let userPSID = this.webhookEvent.sender.id;
+        GraphAPi.getUserProfile(userPSID).then((userProfile) => {
+          console.log(userProfile)
+          //saving tenant ID with PSID
+          BasicUserService.createUser(this.webhookEvent.sender.id, tenantID, userProfile.firstName, userProfile.lastName);
+        }).catch((error) => {
+          // The profile is unavailable
+          console.log("Profile is unavailable:", error);
+        });
+        response = [];
+        response.push({
+          text: `Hi ` + this.user.firstName + `!`,
+        });
+        response.push({
+          text: `Welcome to Tracified Contact Tracer. We will now ask you a some questions. Please answer honestly to ensure the safety of yourself and everyone around you.`
+        });
+        response.push(Question.question1(this.user));
+        resovle(response);
       }
-      // response = [{
-      //   attachment: {
-      //     type: "template",
-      //     payload: {
-      //       template_type: "button",
-      //       text: "Register for Tracified Contact Tracer! Click on the button below and share the page with your employees! 🔗🔗 Or simple copy this link and share it https://m.me/101757184804637?ref=TENANTID-asda",
-      //       buttons: [
-      //         {
-      //           type: "web_url",
-      //           url: "https://m.me/101757184804637?ref=TENANTID-asda",
-      //           title: "Tracified Contact Tracer",
-      //           webview_height_ratio: "tall"
-      //         }
-      //       ]
-      //     }
-      //   }
-      // }];
-
-    } else if (payload.includes("TENANTID")) {
-      const tenantID = payload.substring(payload.indexOf('-') + 1);
-      let userPSID = this.webhookEvent.sender.id;
-      GraphAPi.getUserProfile(userPSID).then((userProfile) => {
-        console.log(userProfile)
-        //saving tenant ID with PSID
-        BasicUserService.createUser(this.webhookEvent.sender.id, tenantID, userProfile.firstName, userProfile.lastName);
-      }).catch((error) => {
-        // The profile is unavailable
-        console.log("Profile is unavailable:", error);
-      });
-      response = [];
-      response.push({
-        text: `Hi ` + this.user.firstName + `!`,
-      });
-      response.push({
-        text: `Welcome to Tracified Contact Tracer. We will now ask you a some questions. Please answer honestly to ensure the safety of yourself and everyone around you.`
-      });
-      response.push(Question.question1(this.user));
-    }
-    else {
-      response = {
-        text: `This is a default postback message for payload: ${payload}!`
-      };
-    }
-
-    return response;
+      else {
+        response = {
+          text: `This is a default postback message for payload: ${payload}!`
+        };
+        resovle(response);
+      }
+    });
   }
 
   handlePrivateReply(type, object_id) {
