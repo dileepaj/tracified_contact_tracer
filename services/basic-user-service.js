@@ -10,12 +10,12 @@ module.exports = class BasicUserService {
 
   static createUser(PSID, tenantId, firstName, lastName) {
     return new Promise((resolve, reject) => {
-      BasicUser.findOne({PSID: this.webhookEvent.sender.id}).then((res) => {
+      BasicUser.findOne({PSID: PSID}).then((res) => {
         if (res) {
-          console.log(this.webhookEvent.sender.id, " already exists in DB no need to save.");
+          console.log(PSID, " already exists in DB no need to save.");
           resolve(res);
         } else {
-          console.log(this.webhookEvent.sender.id, " does not exists in DB need to save.");
+          console.log(PSID, " does not exists in DB need to save.");
           BasicUser.create({
             PSID: PSID,
             tenantId: tenantId,
