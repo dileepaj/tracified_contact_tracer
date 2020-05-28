@@ -59,10 +59,10 @@ module.exports = class BasicUserService {
         lastAnsweredTimestamp: Date.now(),
         startOverInitiated: false,
         $push: {
-          answers: [{
+          answers: {
             question: question,
             answer: answer
-          }]
+          }
         }
       }
     } else {
