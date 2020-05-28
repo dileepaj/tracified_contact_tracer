@@ -89,7 +89,7 @@ function setRegJson() {
 	formJson = {
 		user: {
 			name: empName.value,
-			company: orgName.value,
+			company: orgName.value + "COVID-19",
 			address: tempAddress,
 			contact: contactNo,
 			country: selCountry.value,
