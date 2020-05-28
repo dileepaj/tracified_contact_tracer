@@ -238,7 +238,8 @@ module.exports = class Receive {
         ).then((basicUser) => {
           console.log("1st answer saved for PSID ", basicUser.PSID)
         }).catch((err) => {
-          console.log(err, " PSID ", this.webhookEvent.sender.id)
+          console.log(err, " PSID ", this.webhookEvent.sender.id);
+          reject(err);
         });
         response = Question.question2(payload);
         resovle(response);
@@ -247,7 +248,8 @@ module.exports = class Receive {
           this.webhookEvent.message.text, true).then((basicUser) => {
           console.log("2nd answer saved for PSID ", basicUser.PSID)
         }).catch((err) => {
-          console.log(err, " PSID ", this.webhookEvent.sender.id)
+          console.log(err, " PSID ", this.webhookEvent.sender.id);
+          reject(err);
         });
         response = Question.question3(payload);
         resovle(response);
@@ -256,13 +258,15 @@ module.exports = class Receive {
           this.webhookEvent.message.text, true).then((basicUser) => {
           console.log("3rd answer saved for PSID ", basicUser.PSID)
         }).catch((err) => {
-          console.log(err, " PSID ", this.webhookEvent.sender.id)
+          console.log(err, " PSID ", this.webhookEvent.sender.id);
+          reject(err);
         });
   
         BasicUserService.sendDataToTracified(this.webhookEvent.sender.id, this.webhookEvent.message.text).then(() => {
-          console.log("Data sent to Tracified")
+          console.log("Data sent to Tracified");
         }).catch((err) => {
-          console.log("Something went wrong, data did not go to Tracified. PSID ", this.webhookEvent.sender.id, err)
+          console.log("Something went wrong, data did not go to Tracified. PSID ", this.webhookEvent.sender.id, err);
+          reject(err);
         })
   
         response = [];
@@ -287,7 +291,8 @@ module.exports = class Receive {
             resovle(response);
           }).catch((err) => {
             // TODO add message to try again
-            console.log("admin user with token ", extractedToken, " failed to attach PSID ", this.webhookEvent.sender.id, err)
+            console.log("admin user with token ", extractedToken, " failed to attach PSID ", this.webhookEvent.sender.id, err);
+            reject(err);
           });
         } else {
           response.push({
@@ -323,6 +328,7 @@ module.exports = class Receive {
         }).catch((error) => {
           // The profile is unavailable
           console.log("Profile is unavailable:", error);
+          reject(error);
         });
         response = [];
         response.push({
@@ -336,7 +342,7 @@ module.exports = class Receive {
       }
       else {
         response = {
-          text: `This is a default postback message for payload: ${payload}!`
+          text: `This is a default message. Try again!`
         };
         resovle(response);
       }
