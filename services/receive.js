@@ -13,7 +13,6 @@
 const Response = require("./response"),
   Question = require("./question"),
   GraphAPi = require("./graph-api"),
-  BasicUser = require("../db/userSchema"),
   BasicUserService = require("./basic-user-service"),
   AdminUserService = require("./admin-user-service"),
   QuestionList = require('./../question-list'),
@@ -83,7 +82,7 @@ module.exports = class Receive {
       "Received text:",
       `${this.webhookEvent.message.text} for ${this.user.psid}`
     );
-    return BasicUser.findOne({ PSID: this.user.psid }).then((basicUser) => {
+    return BasicUserService.findUser({ PSID: this.user.psid }).then((basicUser) => {
       // TODO NOTE Admin users can also type messages and therefore cannot send them this flow.
       if (!basicUser) {
         // User does not exist. Tell him to go back and come again as user not registered properly
