@@ -47,12 +47,12 @@ app.use(express.static(path.join(path.resolve(), "public")));
 app.set("view engine", "ejs");
 
 // Respond with index file when a GET request is made to the homepage
-app.get("/", function(_req, res) {
+app.get("/", function (_req, res) {
 	res.render("index");
 });
 
 // For facebook webview for admins
-app.get("/share", function(_req, res) {
+app.get("/share", function (_req, res) {
 	res.render("share");
 });
 
@@ -83,22 +83,16 @@ mongoose.set("useNewUrlParser", true);
 mongoose.set("useCreateIndex", true);
 mongoose.set("useUnifiedTopology", true);
 
-mongoose
-	.connect(process.env.MONGOLAB_URI)
-	.then(() => {
-		console.log("successfully conected to mongoDB");
-		// BasicUser.create({
-		//   PSID:"asdasd",
-		// })
-	})
-	.catch((err) => {
-		console.log(err.message);
-	});
+mongoose.connect(process.env.MONGOLAB_URI).then(() => {
+	console.log("successfully conected to mongoDB");
+}).catch((err) => {
+	console.log(err.message);
+});
 
 mongoose.Promise = global.Promise; // Use global promises for mongoose
 
 //add admin to db
-app.post("/registerAdmin", (req, res) => {
+app.post("/user/admin", (req, res) => {
 	console.log("Inside register admin")
 	// TODD repopulate workflows
 	const decodedToken = jwt.decode(req.body.admin.token);
@@ -117,12 +111,12 @@ app.post("/registerAdmin", (req, res) => {
 });
 
 // For admin registration
-app.get("/register", function(_req, res) {
+app.get("/register", function (_req, res) {
 	res.render("register");
 });
 
 // For admin email validation
-app.get("/confirm", function(_req, res) {
+app.get("/confirm", function (_req, res) {
 	res.render("confirm");
 });
 
@@ -151,18 +145,13 @@ app.get("/webhook", (req, res) => {
 app.post("/webhook", (req, res) => {
 	let body = req.body;
 
-	// console.log(body)
 	// Checks if this is an event from a page subscription
 	if (body.object === "page") {
 		// Returns a '200 OK' response to all requests
 		res.status(200).send("EVENT_RECEIVED");
 
 		// Iterates over each entry - there may be multiple if batched
-		body.entry.forEach(function(entry) {
-			// console.log(entry)
-			// console.log(entry.messaging)
-			// console.log()
-			// console.log()
+		body.entry.forEach(function (entry) {
 			if ("changes" in entry) {
 				// Handle Page Changes event
 				let receiveMessage = new Receive();
@@ -319,17 +308,17 @@ function verifyRequestSignature(req, res, buf) {
 config.checkEnvVariables();
 
 // listen for requests :)
-var listener = app.listen(config.port, function() {
+var listener = app.listen(config.port, function () {
 	console.log("Your app is listening on port " + listener.address().port);
 
 	if (Object.keys(config.personas).length == 0 && config.appUrl && config.verifyToken) {
 		console.log(
 			"Is this the first time running?\n" +
-				"Make sure to set the both the Messenger profile, persona " +
-				"and webhook by visiting:\n" +
-				config.appUrl +
-				"/profile?mode=all&verify_token=" +
-				config.verifyToken
+			"Make sure to set the both the Messenger profile, persona " +
+			"and webhook by visiting:\n" +
+			config.appUrl +
+			"/profile?mode=all&verify_token=" +
+			config.verifyToken
 		);
 	}
 

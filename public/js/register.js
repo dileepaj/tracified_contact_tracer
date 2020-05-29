@@ -84,7 +84,7 @@ function encryption() {
 function setRegJson() {
 	let contactNo = "+" + Math.round(Date.now() / Math.random(100000));
 	let tempAddress = "A street, B street, Colombo";
-	let tempDomain = "Domain";
+	let tempDomain = "COVID-19";
 
 	formJson = {
 		user: {

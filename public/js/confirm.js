@@ -268,7 +268,7 @@ function redirectToFB() {
 }
 
 function saveAdmin(recToken) {
-	let url = "/registerAdmin";
+	let url = "/user/admin";
 	let decode = jwt_decode(recToken);
 	let tenant = decode.tenantID;
 
