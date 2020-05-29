@@ -41,19 +41,7 @@ module.exports = class Receive {
           responses = this.handleAttachmentMessage();
         } else if (message.text) {
           // TODO code duplicated
-          responses = this.handleTextMessage().then((textResponse) => {
-            if (Array.isArray(textResponse)) {
-              let delay = 0;
-              for (let response of textResponse) {
-                this.sendMessage(response, delay * 1000);
-                delay++;
-              }
-            } else {
-              this.sendMessage(textResponse);
-            }
-          }).catch((err) => {
-            console.log(err)
-          });
+          responses = this.handleTextMessage();
         }
       } else if (event.postback) {
         responses = this.handlePostback();
@@ -70,27 +58,12 @@ module.exports = class Receive {
 
     if (responses instanceof Promise) {
       responses.then((actualResponses) => {
-        actualResponses
-        if (Array.isArray(actualResponses)) {
-          let delay = 0;
-          for (let response of actualResponses) {
-            this.sendMessage(response, delay * 1000);
-            delay++;
-          }
-        } else {
-          this.sendMessage(actualResponses);
-        }
+        this.sendResposnes(actualResponses);
       }).catch((err) => {
         console.log(err)
       })
-    } else if (Array.isArray(responses)) {
-      let delay = 0;
-      for (let response of responses) {
-        this.sendMessage(response, delay * 1000);
-        delay++;
-      }
     } else {
-      this.sendMessage(responses);
+      this.sendResposnes(responses);
     }
   }
 
@@ -111,16 +84,25 @@ module.exports = class Receive {
       `${this.webhookEvent.message.text} for ${this.user.psid}`
     );
     return BasicUser.findOne({ PSID: this.user.psid }).then((basicUser) => {
-      // TODO check if user exists or not. If not tell him to go back and come again as user not registered properly
-      if (message.includes("start over")) {
-        response = Question.question1(this.user)
+      // TODO NOTE Admin users can also type messages and therefore cannot send them this flow.
+      if (!basicUser) {
+        // User does not exist. Tell him to go back and come again as user not registered properly
+        response = {
+          text: `Please revisit the m.me link provided by your admin.`
+        };
+      } else if (message.includes("start over")) {
+        // If the Text contains start over it will do needful i.e. clear the existing info and startup the survey
+        response = Question.question1(this.user);
         BasicUserService.clearAnswers(this.user.psid);
         BasicUserService.setStartOverInitiated(this.user.psid, true);
       } else if (basicUser.startOverInitiated === false && !basicUser.answers) {
+        // If the user has not initiated a start over and has no active surveys will send following response
         response = {
           text: `If you wish to redo the survey, please type "start over" in text box below`
         };
       } else if (!basicUser.answers || basicUser.answers.length === 0) {
+        // At this point it indicates that the user has already started the survey and has responded
+        // with the first answer therefore saving it and sending 2nd question 
         BasicUserService.updateUserQuestion(
           this.webhookEvent.sender.id,
           QuestionList.QUESTION1,
@@ -133,14 +115,19 @@ module.exports = class Receive {
         response = Question.question2(payload);
       }
       else if (basicUser.answers[0].question != QuestionList.QUESTION1) {
-        // TODO ask first question again
+        // First question has not been saved due to some reason therefore ask first question again
         response = Question.question1(this.user);
       } else if (!basicUser.answers[1]) {
+        // Text messages are not accepted as a response for 2nd question, only quick replies are accepted
+        // therefore ask the 2nd question again
         response = Question.question2(payload);
       } else if (!basicUser.answers[2]) {
+        // Text messages are not accepted as a response for 3rd question, only quick replies are accepted
+        // therefore ask the 3rd question again
         response = Question.question3(payload);
       } else {
-        // TODO this means all questions are there but it hasn't been saved
+        // This means all questions have been answered but haven't been sent to Tracified
+        // due to some reason. Therefore attempt sending them to Tracified
         BasicUserService.sendDataToTracified(this.webhookEvent.sender.id, null).then(() => {
           console.log("Data sent to Tracified");
           response = {
@@ -226,11 +213,12 @@ module.exports = class Receive {
         payload === "DEVDOCS" ||
         payload === "GITHUB"
       ) {
-        //Where questions are being called from
-        //First question starts here
+        // First question starts here
         response = Question.question1(this.user);
         resovle(response);
       } else if (payload.toUpperCase().includes("QUESTION1")) {
+        // If the payload contains QUESTION1 tag it indicates that this is the answer to 
+        // the 1st question therefore it'll save that and ask the second question
         BasicUserService.updateUserQuestion(
           this.webhookEvent.sender.id,
           QuestionList.QUESTION1,
@@ -244,6 +232,8 @@ module.exports = class Receive {
         response = Question.question2(payload);
         resovle(response);
       } else if (payload.toUpperCase().includes("QUESTION2")) {
+        // If the payload contains QUESTION2 tag it indicates that this is the answer to 
+        // the 2nd question therefore it'll save that and ask the third question
         BasicUserService.updateUserQuestion(this.webhookEvent.sender.id, QuestionList.QUESTION2,
           this.webhookEvent.message.text, true).then((basicUser) => {
           console.log("2nd answer saved for PSID ", basicUser.PSID)
@@ -254,6 +244,8 @@ module.exports = class Receive {
         response = Question.question3(payload);
         resovle(response);
       } else if (payload.toUpperCase().includes("END")) {
+        // If the payload contains END tag it indicates that this is the answer to 
+        // the last question therefore it'll save that and submit data to Tracified
         BasicUserService.updateUserQuestion( this.webhookEvent.sender.id, QuestionList.QUESTION3,
           this.webhookEvent.message.text, true).then((basicUser) => {
           console.log("3rd answer saved for PSID ", basicUser.PSID)
@@ -275,6 +267,8 @@ module.exports = class Receive {
         });
         resovle(response);
       } else if (payload.includes("TOKEN")) {
+        // If the payload contains TOKEN tag it indicates that this is the initial 
+        // load of admin user hence will update the PSID of admin user and also send relevant messages 
         const extractedToken = payload.substring(payload.indexOf('-') + 1);
         console.log("got a token request ", extractedToken);
         if (extractedToken) {
@@ -288,6 +282,9 @@ module.exports = class Receive {
             response.push({
               text: `Hi! The company has partnered with Tracified Contact Tracer to help fight against the COVID-19 virus. Please follow this link and do the needful https://m.me/101757184804637?ref=TENANTID-` + updatedAdminUser.tenantId + `. The company look forwards to your full co-operation. Thank you.`,
             });
+            response.push({
+              text: `If you as an admin also want to take part in the Tracified Contact Tracer survery click on the link in the above message.`,
+            });
             resovle(response);
           }).catch((err) => {
             // TODO add message to try again
@@ -300,25 +297,10 @@ module.exports = class Receive {
           });
           resovle(response);
         }
-        // response = [{
-        //   attachment: {
-        //     type: "template",
-        //     payload: {
-        //       template_type: "button",
-        //       text: "Register for Tracified Contact Tracer! Click on the button below and share the page with your employees! 🔗🔗 Or simple copy this link and share it https://m.me/101757184804637?ref=TENANTID-asda",
-        //       buttons: [
-        //         {
-        //           type: "web_url",
-        //           url: "https://m.me/101757184804637?ref=TENANTID-asda",
-        //           title: "Tracified Contact Tracer",
-        //           webview_height_ratio: "tall"
-        //         }
-        //       ]
-        //     }
-        //   }
-        // }];
   
       } else if (payload.includes("TENANTID")) {
+        // If the payload contains TENANTID tag it indicates that this a basic user i.e. employee 
+        // therefore it will ask the first question and also save the relevant user information
         const tenantID = payload.substring(payload.indexOf('-') + 1);
         let userPSID = this.webhookEvent.sender.id;
         GraphAPi.getUserProfile(userPSID).then((userProfile) => {
@@ -326,7 +308,6 @@ module.exports = class Receive {
           //saving tenant ID with PSID
           BasicUserService.createUser(this.webhookEvent.sender.id, tenantID, userProfile.firstName, userProfile.lastName);
         }).catch((error) => {
-          // The profile is unavailable
           console.log("Profile is unavailable:", error);
           reject(error);
         });
@@ -341,6 +322,7 @@ module.exports = class Receive {
         resovle(response);
       }
       else {
+        // This indicates that some other tag is present which is not relvant to Tracified Contact Tracer
         response = {
           text: `This is a default message. Try again!`
         };
@@ -377,6 +359,22 @@ module.exports = class Receive {
     };
 
     GraphAPi.callSendAPI(requestBody);
+  }
+
+/**
+ * 
+ * @param responses takes in an Array or a single response object triggers sendMessage accordingly
+ */
+  sendResposnes(responses) {
+    if (Array.isArray(responses)) {
+      let delay = 0;
+      for (let response of responses) {
+        this.sendMessage(response, delay * 1000);
+        delay++;
+      }
+    } else {
+      this.sendMessage(responses);
+    }
   }
 
   sendMessage(response, delay = 0) {
